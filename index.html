@@ -5,31 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PDF to Flashcards</title>
 <style>
-:root{--bg:#faf8f4;--fg:#1f1d1a;--mut:#6b665e;--card:#fff;--acc:#3d5afe;--bd:#e3ded5;--back:#eef1ff}
-@media (prefers-color-scheme:dark){:root{--bg:#15171c;--fg:#ecebe8;--mut:#9a978f;--card:#1e2128;--acc:#7c93ff;--bd:#2f333c;--back:#252b45}}
+:root{--bg:#15171c;--fg:#f2f2f2;--mut:#b5b5b5;--card:rgba(255,255,255,.08);--bd:rgba(255,255,255,.18);--acc:#7c93ff;--back:rgba(255,255,255,.16)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:760px;margin:0 auto;padding:28px 18px 60px}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;transition:background .25s}
+main{max-width:760px;margin:0 auto;padding:24px 18px 60px}
 h1{font-size:1.7rem;margin:0 0 4px}
-.sub{color:var(--mut);margin:0 0 22px}
+.sub{color:var(--mut);margin:0 0 16px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.tabs{display:flex;gap:8px;margin:14px 0}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
 #drop{border:2px dashed var(--bd);border-radius:16px;background:var(--card);padding:38px 18px;text-align:center;cursor:pointer}
 #drop.over{border-color:var(--acc)}
 #drop b{display:block;font-size:1.1rem;margin-bottom:4px}
 #drop span{color:var(--mut);font-size:.92rem}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
 select,button{font:inherit;padding:8px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--fg);cursor:pointer}
+select option{color:#111}
 button.p{background:var(--acc);border-color:var(--acc);color:#fff}
+button.danger{color:#ff8a8a}
 #status{color:var(--mut);font-size:.95rem;min-height:1.4em}
-.hide{display:none}
-/* flashcards */
-#count{text-align:center;color:var(--mut);margin:10px 0 6px}
+.hide{display:none!important}
+/* background picker */
+.bgbox{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bgbox small{color:var(--mut)}
+.sw{width:24px;height:24px;padding:0;border-radius:50%;border:2px solid var(--bd)}
+input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--bd);border-radius:8px;background:none;cursor:pointer}
+/* saved decks */
+.deckitem{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--bd);background:var(--card);border-radius:14px;padding:12px 14px;margin:10px 0}
+.deckitem .nm{font-weight:600}
+.deckitem .meta{color:var(--mut);font-size:.85rem}
+.deckitem .btns{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid var(--bd);margin-right:6px;vertical-align:middle}
+/* study */
+#deckTitle{font-size:1.3rem;font-weight:700;margin:6px 0}
+#cnt{text-align:center;color:var(--mut);margin:10px 0 6px}
 #card{perspective:1000px;height:260px;cursor:pointer;margin:0 auto}
 #inner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
 #card.flip #inner{transform:rotateY(180deg)}
 .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;border:1px solid var(--bd);border-radius:18px;background:var(--card);font-size:1.25rem;overflow:auto}
 .face.b{transform:rotateY(180deg);background:var(--back);font-size:1.05rem}
-.tag{position:absolute;top:10px;left:14px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
-#nav{justify-content:center}
+.tag{position:absolute;top:10px;left:14px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;opacity:.65}
+.center{justify-content:center}
+input[type=number]{font:inherit;padding:8px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--fg)}
+.qopt{display:block;width:100%;text-align:left;margin:8px 0}
+.qopt.ok{border-color:#3ecf8e;background:rgba(62,207,142,.22)}
+.qopt.no{border-color:#ff6b6b;background:rgba(255,107,107,.22)}
 /* notes */
 #out{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:6px 22px 18px;margin-top:14px;overflow-x:auto}
 #out h1{font-size:1.4rem;margin:.9em 0 .3em}
@@ -41,51 +61,101 @@ button.p{background:var(--acc);border-color:var(--acc);color:#fff}
 </head>
 <body>
 <main>
-  <h1>PDF to Flashcards</h1>
-  <p class="sub">Drop in a PDF and AI turns it into flashcards (or study notes).</p>
-
-  <div id="drop" tabindex="0">
-    <b>Drop your PDF here</b>
-    <span>or click to choose a file</span>
-    <input id="file" type="file" accept="application/pdf" class="hide">
+  <div class="top">
+    <div>
+      <h1>PDF to Flashcards</h1>
+      <p class="sub">Drop in a PDF and AI turns it into flashcards you can save.</p>
+    </div>
+    <div class="bgbox" id="bgbox"><small>Background:</small></div>
   </div>
 
-  <div class="row" id="opts">
-    <label for="mode">Make:</label>
-    <select id="mode">
-      <option value="flashcards" selected>Flashcards</option>
-      <option value="notes">Study notes</option>
-    </select>
-    <span id="cardOpt"><label for="count">Cards:</label>
-    <select id="count"><option>10</option><option selected>20</option><option>30</option><option>40</option></select></span>
+  <div class="tabs">
+    <button class="tab on" id="tabCreate">Create</button>
+    <button class="tab" id="tabSaved">Saved decks (<span id="nDecks">0</span>)</button>
   </div>
 
   <div id="status"></div>
 
-  <div id="deck" class="hide">
-    <div id="count-label"></div>
+  <!-- CREATE -->
+  <div id="createView">
+    <div id="drop" tabindex="0">
+      <b>Drop your PDF here</b>
+      <span>or click to choose a file</span>
+      <input id="file" type="file" accept="application/pdf" class="hide">
+    </div>
+    <div class="row">
+      <label for="mode">Make:</label>
+      <select id="mode">
+        <option value="flashcards" selected>Flashcards</option>
+        <option value="notes">Study notes</option>
+      </select>
+      <span id="cardOpt"><label for="count">Cards:</label>
+      <select id="count"><option>10</option><option selected>20</option><option>30</option><option>40</option></select>
+      <select id="style"><option value="qa">Question &amp; answer</option><option value="cloze">Fill in the blank</option><option value="tf">True or false</option></select></span>
+      <span><label>Pages:</label> <input id="pFrom" type="number" min="1" placeholder="from" style="width:72px"> <input id="pTo" type="number" min="1" placeholder="to" style="width:72px"></span>
+      <select id="lang"><option value="">Language: same as PDF</option><option>English</option><option>Filipino</option><option>Cebuano</option><option>Spanish</option></select>
+    </div>
+  </div>
+
+  <!-- SAVED -->
+  <div id="savedView" class="hide">
+    <div class="row"><button id="mix">Study all decks together</button></div>
+    <div id="deckList"></div>
+  </div>
+
+  <!-- STUDY -->
+  <div id="studyView" class="hide">
+    <div class="row" style="justify-content:space-between">
+      <div id="deckTitle"></div>
+      <div class="btns row" style="margin:0">
+        <button id="renameBtn">Rename</button>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--mut);font-size:.9rem">Card color <input type="color" id="cardColor" value="#3d5afe"></label>
+        <button id="resetColor">Reset</button>
+      </div>
+    </div>
     <div id="cnt"></div>
     <div id="card"><div id="inner">
-      <div class="face"><span class="tag">Question</span><span id="front"></span></div>
-      <div class="face b"><span class="tag">Answer</span><span id="back"></span></div>
+      <div class="face" id="faceF"><span class="tag">Question</span><span id="front"></span></div>
+      <div class="face b" id="faceB"><span class="tag">Answer</span><span id="back"></span></div>
     </div></div>
-    <div class="row" id="nav">
+    <div class="row center">
       <button id="prev">&larr; Prev</button>
       <button id="flip" class="p">Flip</button>
       <button id="next">Next &rarr;</button>
     </div>
-    <div class="row" id="nav2" style="justify-content:center">
+    <div class="row center">
+      <button id="learn">Still learning</button>
+      <button id="got" class="p">Got it</button>
+    </div>
+    <div class="row center">
+      <button id="speak">Read aloud</button>
+      <button id="edit">Edit card</button>
+      <button id="add">Add card</button>
+      <button id="del" class="danger">Delete card</button>
+    </div>
+    <div class="row center">
+      <button id="missed">Missed only</button>
+      <button id="allc">All cards</button>
+      <button id="quiz">Quiz</button>
+    </div>
+    <div class="row center">
       <button id="shuffle">Shuffle</button>
       <button id="csv">Download CSV</button>
-      <button id="again1">New PDF</button>
+      <button id="anki">Anki file</button>
+      <button id="share">Share link</button>
+      <button id="backSaved">All saved decks</button>
     </div>
   </div>
 
-  <div id="notes" class="hide">
+  <!-- QUIZ -->
+  <div id="quizView" class="hide"><div id="qbox"></div></div>
+
+  <!-- NOTES -->
+  <div id="notesView" class="hide">
     <div class="row">
       <button id="copy">Copy</button>
       <button id="save">Download .md</button>
-      <button id="again2" class="p">New PDF</button>
+      <button id="again" class="p">New PDF</button>
     </div>
     <div id="out"></div>
   </div>
@@ -95,46 +165,136 @@ button.p{background:var(--acc);border-color:var(--acc);color:#fff}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const drop = $("drop"), fileInput = $("file"), statusEl = $("status");
-let cards = [], idx = 0, flipped = false, notesMd = "", busy = false;
+const statusEl = $("status"), drop = $("drop"), fileInput = $("file");
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-$("mode").onchange = () => $("cardOpt").classList.toggle("hide", $("mode").value !== "flashcards");
-drop.onclick = () => fileInput.click();
-drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") fileInput.click(); };
-fileInput.onchange = () => fileInput.files[0] && handle(fileInput.files[0]);
-["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
-["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
-drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) handle(f); });
+/* ---------- storage (saved in this browser only) ---------- */
+function load(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
+function store(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch { statusEl.textContent = "Could not save: your browser is blocking storage."; return false; } }
+let decks = load("fc_decks", []);
+let cur = null, cards = [], idx = 0, flipped = false, notesMd = "", busy = false;
 
-function reset() {
-  $("deck").classList.add("hide"); $("notes").classList.add("hide");
-  drop.classList.remove("hide"); $("opts").classList.remove("hide");
-  statusEl.textContent = ""; fileInput.value = "";
+/* ---------- colors ---------- */
+function isDark(hex) {
+  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55;
 }
-$("again1").onclick = reset; $("again2").onclick = reset;
+function applyBg(hex) {
+  const s = document.documentElement.style, d = isDark(hex);
+  s.setProperty("--bg", hex);
+  s.setProperty("--fg", d ? "#f2f2f2" : "#1f1d1a");
+  s.setProperty("--mut", d ? "#b5b5b5" : "#5f5b54");
+  s.setProperty("--card", d ? "rgba(255,255,255,.08)" : "rgba(255,255,255,.7)");
+  s.setProperty("--bd", d ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)");
+  s.setProperty("--back", d ? "rgba(255,255,255,.16)" : "rgba(61,90,254,.10)");
+  s.setProperty("--acc", d ? "#7c93ff" : "#3d5afe");
+}
+const presets = ["#15171c", "#faf8f4", "#1e3a5f", "#2d4a3e", "#4a2c5a", "#7a3b3b", "#fff4d6", "#dff3ff"];
+const savedBg = load("fc_bg", null) || (matchMedia("(prefers-color-scheme: light)").matches ? "#faf8f4" : "#15171c");
+applyBg(savedBg);
+(function buildBgPicker() {
+  const box = $("bgbox");
+  presets.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "sw"; b.style.background = c; b.title = c;
+    b.onclick = () => { applyBg(c); store("fc_bg", c); bgInput.value = c; };
+    box.appendChild(b);
+  });
+  const bgInput = document.createElement("input");
+  bgInput.type = "color"; bgInput.value = savedBg; bgInput.title = "Custom background";
+  bgInput.oninput = () => applyBg(bgInput.value);
+  bgInput.onchange = () => store("fc_bg", bgInput.value);
+  box.appendChild(bgInput);
+})();
 
-/* flashcards */
+/* ---------- views ---------- */
+function show(name) {
+  ["create", "saved", "study", "quiz", "notes"].forEach(v => $(v + "View").classList.toggle("hide", v !== name));
+  $("tabCreate").classList.toggle("on", name === "create" || name === "notes");
+  $("tabSaved").classList.toggle("on", name === "saved" || name === "study");
+  if (name === "saved") renderDecks();
+}
+$("tabCreate").onclick = () => { statusEl.textContent = ""; show("create"); };
+$("tabSaved").onclick = () => { statusEl.textContent = ""; show("saved"); };
+$("backSaved").onclick = () => show("saved");
+$("again").onclick = () => { statusEl.textContent = ""; fileInput.value = ""; show("create"); };
+$("mode").onchange = () => $("cardOpt").classList.toggle("hide", $("mode").value !== "flashcards");
+
+/* ---------- saved decks ---------- */
+function renderDecks() {
+  $("nDecks").textContent = decks.length;
+  const list = $("deckList");
+  list.innerHTML = "";
+  if (!decks.length) { list.innerHTML = '<p class="sub">No saved decks yet. Make flashcards from a PDF and they will appear here.</p>'; return; }
+  decks.forEach(d => {
+    const el = document.createElement("div"); el.className = "deckitem";
+    const info = document.createElement("div");
+    const nm = document.createElement("div"); nm.className = "nm";
+    const chip = document.createElement("span"); chip.className = "chip"; chip.style.background = d.color || "transparent";
+    nm.append(chip, document.createTextNode(d.name));
+    const meta = document.createElement("div"); meta.className = "meta";
+    meta.textContent = d.cards.length + " cards · " + d.cards.filter(c => c.known).length + " learned · " + new Date(d.created).toLocaleDateString();
+    info.append(nm, meta);
+    const btns = document.createElement("div"); btns.className = "btns";
+    const mk = (label, cls, fn) => { const b = document.createElement("button"); b.textContent = label; if (cls) b.className = cls; b.onclick = fn; btns.appendChild(b); };
+    mk("Open", "p", () => openDeck(d.id));
+    mk("Rename", "", () => renameDeck(d.id));
+    mk("Delete", "danger", () => { if (confirm('Delete "' + d.name + '"?')) { decks = decks.filter(x => x.id !== d.id); store("fc_decks", decks); renderDecks(); } });
+    el.append(info, btns);
+    list.appendChild(el);
+  });
+}
+function renameDeck(id) {
+  const d = decks.find(x => x.id === id); if (!d) return;
+  const name = prompt("New name for this deck:", d.name);
+  if (name && name.trim()) { d.name = name.trim().slice(0, 80); store("fc_decks", decks); if (cur && cur.id === id) $("deckTitle").textContent = d.name; renderDecks(); }
+}
+$("renameBtn").onclick = () => cur && renameDeck(cur.id);
+
+/* ---------- study ---------- */
+function styleCard() {
+  const col = cur && cur.color, f = $("faceF"), b = $("faceB");
+  if (!col) { [f, b].forEach(x => { x.style.background = ""; x.style.color = ""; }); return; }
+  const txt = isDark(col) ? "#f5f5f5" : "#1f1d1a";
+  f.style.background = col; f.style.color = txt;
+  b.style.background = "linear-gradient(rgba(0,0,0,.14),rgba(0,0,0,.14)), " + col; b.style.color = txt;
+}
+function openDeck(id) {
+  cur = decks.find(d => d.id === id); if (!cur) return;
+  if (!cur.cards.length) { statusEl.textContent = "This deck has no cards."; return; }
+  cards = cur.cards.slice(); idx = 0; flipped = false;
+  $("card").classList.remove("flip");
+  $("deckTitle").textContent = cur.name;
+  $("cardColor").value = cur.color || "#3d5afe";
+  styleCard(); showCard(); show("study");
+}
 function showCard() {
   const c = cards[idx];
   $("front").textContent = c.front; $("back").textContent = c.back;
-  $("cnt").textContent = "Card " + (idx + 1) + " of " + cards.length;
-  $("cnt").style.cssText = "text-align:center;color:var(--mut);margin:10px 0 6px";
+  $("cnt").textContent = "Card " + (idx + 1) + " of " + cards.length + " · " + cur.cards.filter(x => x.known).length + "/" + cur.cards.length + " learned";
 }
 function go(step) {
   flipped = false; $("card").classList.remove("flip");
   idx = (idx + step + cards.length) % cards.length;
   setTimeout(showCard, 180);
 }
-$("card").onclick = $("flip").onclick = () => { flipped = !flipped; $("card").classList.toggle("flip", flipped); };
+const flipIt = () => { flipped = !flipped; $("card").classList.toggle("flip", flipped); };
+let sx = null, swiped = false;
+$("card").onclick = () => { if (swiped) { swiped = false; return; } flipIt(); };
+$("flip").onclick = flipIt;
+$("card").addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, { passive: true });
+$("card").addEventListener("touchend", e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) { swiped = true; go(dx < 0 ? 1 : -1); } });
 $("prev").onclick = () => go(-1);
 $("next").onclick = () => go(1);
 $("shuffle").onclick = () => {
   for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
   idx = 0; go(0);
 };
+$("cardColor").oninput = () => { if (cur) { cur.color = $("cardColor").value; styleCard(); } };
+$("cardColor").onchange = () => store("fc_decks", decks);
+$("resetColor").onclick = () => { if (cur) { cur.color = null; store("fc_decks", decks); styleCard(); } };
 document.addEventListener("keydown", e => {
-  if ($("deck").classList.contains("hide")) return;
+  if ($("studyView").classList.contains("hide") || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
   if (e.key === "ArrowRight") go(1);
   else if (e.key === "ArrowLeft") go(-1);
   else if (e.key === " ") { e.preventDefault(); $("flip").click(); }
@@ -146,10 +306,105 @@ function download(name, data, type) {
 }
 $("csv").onclick = () => {
   const q = s => '"' + s.replace(/"/g, '""') + '"';
-  download("flashcards.csv", cards.map(c => q(c.front) + "," + q(c.back)).join("\n"), "text/csv");
+  download((cur ? cur.name : "flashcards") + ".csv", cur.cards.map(c => q(c.front) + "," + q(c.back)).join("\n"), "text/csv");
 };
 
-/* notes */
+/* ---------- study extras ---------- */
+function saveDecks() { store("fc_decks", decks); }
+function mark(k) { if (!cards.length) return; cards[idx].known = k; saveDecks(); go(1); }
+$("got").onclick = () => mark(true);
+$("learn").onclick = () => mark(false);
+$("missed").onclick = () => {
+  const m = cur.cards.filter(c => !c.known);
+  if (!m.length) { statusEl.textContent = "No missed cards. Nice work!"; return; }
+  cards = m; idx = 0; go(0); statusEl.textContent = "Studying the " + m.length + " cards you have not learned yet.";
+};
+$("allc").onclick = () => { cards = cur.cards.slice(); idx = 0; go(0); statusEl.textContent = ""; };
+$("speak").onclick = () => {
+  if (!("speechSynthesis" in window)) { statusEl.textContent = "Read aloud is not supported in this browser."; return; }
+  speechSynthesis.cancel();
+  speechSynthesis.speak(new SpeechSynthesisUtterance(flipped ? cards[idx].back : cards[idx].front));
+};
+$("edit").onclick = () => {
+  const c = cards[idx];
+  const f = prompt("Question:", c.front); if (f === null) return;
+  const b = prompt("Answer:", c.back); if (b === null) return;
+  if (f.trim()) c.front = f.trim();
+  if (b.trim()) c.back = b.trim();
+  saveDecks(); showCard();
+};
+$("add").onclick = () => {
+  if (cur.virtual) { statusEl.textContent = "Open a single deck to add cards."; return; }
+  const f = prompt("New card question:"); if (!f || !f.trim()) return;
+  const b = prompt("Answer:"); if (!b || !b.trim()) return;
+  const c = { front: f.trim(), back: b.trim() };
+  cur.cards.push(c); cards.push(c); saveDecks(); idx = cards.length - 1; go(0);
+};
+$("del").onclick = () => {
+  if (cur.virtual) { statusEl.textContent = "Open a single deck to delete cards."; return; }
+  if (!confirm("Delete this card?")) return;
+  const c = cards[idx];
+  cur.cards.splice(cur.cards.indexOf(c), 1); cards.splice(idx, 1);
+  if (!cur.cards.length) { decks = decks.filter(d => d !== cur); saveDecks(); show("saved"); return; }
+  saveDecks();
+  if (!cards.length) { cards = cur.cards.slice(); }
+  idx = Math.min(idx, cards.length - 1); showCard();
+};
+$("mix").onclick = () => {
+  const all = decks.flatMap(d => d.cards);
+  if (!all.length) { statusEl.textContent = "No cards yet."; return; }
+  cur = { id: "mix", virtual: true, name: "All decks together", cards: all, color: null };
+  cards = all.slice(); idx = 0; flipped = false; $("card").classList.remove("flip");
+  $("deckTitle").textContent = cur.name; styleCard(); showCard(); show("study");
+};
+$("anki").onclick = () => {
+  const clean = s => s.replace(/[\t\r\n]+/g, " ");
+  download((cur.name || "flashcards") + ".txt", cur.cards.map(c => clean(c.front) + "\t" + clean(c.back)).join("\n"), "text/plain");
+  statusEl.textContent = "In Anki, use File > Import and choose this file.";
+};
+const enc = s => btoa(unescape(encodeURIComponent(s)));
+const dec = s => decodeURIComponent(escape(atob(s)));
+$("share").onclick = async () => {
+  if (cur.virtual) { statusEl.textContent = "Open a single deck to share it."; return; }
+  const link = location.origin + location.pathname + "#d=" + enc(JSON.stringify({ n: cur.name, c: cur.cards.map(c => [c.front, c.back]) }));
+  try {
+    await navigator.clipboard.writeText(link);
+    statusEl.textContent = "Link copied. Anyone who opens it gets a copy of this deck." + (link.length > 8000 ? " It is a long link, so some apps may cut it off." : "");
+  } catch { prompt("Copy this link:", link); }
+};
+$("quiz").onclick = () => {
+  const pool = cur.cards;
+  if (pool.length < 2) { statusEl.textContent = "You need at least 2 cards for a quiz."; return; }
+  const qs = pool.slice().sort(() => Math.random() - .5).slice(0, 10), box = $("qbox");
+  let i = 0, score = 0;
+  show("quiz");
+  const next = () => {
+    box.innerHTML = ""; delete box.dataset.lock;
+    if (i >= qs.length) {
+      const h = document.createElement("h2"); h.textContent = "Score: " + score + " / " + qs.length;
+      const b = document.createElement("button"); b.className = "p"; b.textContent = "Back to deck"; b.onclick = () => show("study");
+      box.append(h, b); return;
+    }
+    const q = qs[i];
+    const wrong = pool.filter(c => c.back !== q.back).map(c => c.back).sort(() => Math.random() - .5).slice(0, 3);
+    const h = document.createElement("h3"); h.textContent = (i + 1) + " / " + qs.length + ". " + q.front; box.appendChild(h);
+    [q.back, ...wrong].sort(() => Math.random() - .5).forEach(o => {
+      const b = document.createElement("button"); b.className = "qopt"; b.textContent = o;
+      b.onclick = () => {
+        if (box.dataset.lock) return; box.dataset.lock = 1;
+        const right = o === q.back; if (right) score++;
+        b.classList.add(right ? "ok" : "no");
+        box.querySelectorAll(".qopt").forEach(x => { if (x.textContent === q.back) x.classList.add("ok"); });
+        const n = document.createElement("button"); n.className = "p"; n.textContent = i + 1 >= qs.length ? "See score" : "Next question";
+        n.onclick = () => { i++; next(); }; box.appendChild(n);
+      };
+      box.appendChild(b);
+    });
+  };
+  next();
+};
+
+/* ---------- notes ---------- */
 $("copy").onclick = async () => { try { await navigator.clipboard.writeText(notesMd); statusEl.textContent = "Copied."; } catch { statusEl.textContent = "Copy failed."; } };
 $("save").onclick = () => download("study-notes.md", notesMd, "text/markdown");
 function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -169,17 +424,37 @@ function render(md) {
   return html;
 }
 
-async function extractText(file) {
+/* ---------- PDF -> AI ---------- */
+drop.onclick = () => fileInput.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") fileInput.click(); };
+fileInput.onchange = () => fileInput.files[0] && handle(fileInput.files[0]);
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) handle(f); });
+
+async function extractText(file, from, to) {
   const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const a = Math.max(1, from || 1), b = Math.min(pdf.numPages, to || pdf.numPages);
   let text = "";
-  for (let i = 1; i <= pdf.numPages; i++) {
+  for (let i = a; i <= b; i++) {
     const page = await pdf.getPage(i);
     const c = await page.getTextContent();
     text += c.items.map(x => x.str).join(" ") + "\n\n";
-    statusEl.textContent = "Reading page " + i + " of " + pdf.numPages + "...";
+    statusEl.textContent = "Reading page " + i + " of " + b + "...";
     if (text.length > 80000) break;
   }
-  return { text: text.slice(0, 80000), pages: pdf.numPages };
+  const out = { text: text.slice(0, 80000), pages: Math.max(1, b - a + 1), images: [] };
+  if (text.trim().length < 50) {
+    for (let i = a; i <= Math.min(b, a + 7); i++) {
+      statusEl.textContent = "Scanned PDF: reading page " + i + " as a picture...";
+      const page = await pdf.getPage(i);
+      const w = page.getViewport({ scale: 1 }).width, v = page.getViewport({ scale: Math.min(1.5, 1000 / w) });
+      const cv = document.createElement("canvas"); cv.width = v.width; cv.height = v.height;
+      await page.render({ canvasContext: cv.getContext("2d"), viewport: v }).promise;
+      out.images.push(cv.toDataURL("image/jpeg", 0.6).split(",")[1]);
+    }
+  }
+  return out;
 }
 
 async function handle(file) {
@@ -187,31 +462,45 @@ async function handle(file) {
   if (!file.name.toLowerCase().endsWith(".pdf")) { statusEl.textContent = "Please choose a PDF file."; return; }
   busy = true;
   try {
-    const { text, pages } = await extractText(file);
-    if (text.trim().length < 50) { statusEl.textContent = "No readable text found. This may be a scanned PDF."; busy = false; return; }
+    const { text, pages, images } = await extractText(file, parseInt($("pFrom").value) || 1, parseInt($("pTo").value) || 0);
+    if (text.trim().length < 50 && !images.length) { statusEl.textContent = "No readable content found in those pages."; busy = false; return; }
     const mode = $("mode").value;
     statusEl.textContent = "AI is working (this can take up to a minute)...";
     const r = await fetch("/api/notes", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text, pages, mode, count: $("count").value })
+      body: JSON.stringify({ text, pages, images, mode, count: $("count").value, style: $("style").value, lang: $("lang").value })
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || "Request failed.");
-    drop.classList.add("hide"); $("opts").classList.add("hide");
     if (mode === "flashcards") {
-      cards = data.cards; idx = 0; flipped = false; $("card").classList.remove("flip");
-      showCard(); $("deck").classList.remove("hide");
-      statusEl.textContent = cards.length + " flashcards ready. Click the card or press Space to flip.";
+      const deck = { id: Date.now().toString(36), name: file.name.replace(/\.pdf$/i, "").slice(0, 80), cards: data.cards, color: null, created: Date.now() };
+      decks.unshift(deck);
+      const ok = store("fc_decks", decks);
+      $("nDecks").textContent = decks.length;
+      openDeck(deck.id);
+      statusEl.textContent = ok ? 'Saved as "' + deck.name + '". Click the card or press Space to flip.' : statusEl.textContent;
     } else {
       notesMd = data.notes; $("out").innerHTML = render(notesMd);
-      $("notes").classList.remove("hide"); statusEl.textContent = "Done.";
+      show("notes"); statusEl.textContent = "Done.";
     }
   } catch (e) {
     statusEl.textContent = "Something went wrong: " + e.message;
   }
   busy = false;
 }
+
+$("nDecks").textContent = decks.length;
+(function importShared() {
+  if (!location.hash.startsWith("#d=")) return;
+  try {
+    const o = JSON.parse(dec(location.hash.slice(3)));
+    const deck = { id: Date.now().toString(36), name: String(o.n || "Shared deck").slice(0, 80), cards: o.c.map(x => ({ front: String(x[0]), back: String(x[1]) })), color: null, created: Date.now() };
+    decks.unshift(deck); saveDecks(); history.replaceState(null, "", location.pathname);
+    $("nDecks").textContent = decks.length; openDeck(deck.id);
+    statusEl.textContent = 'Imported shared deck "' + deck.name + '".';
+  } catch { statusEl.textContent = "That share link is broken."; }
+})();
 </script>
 </body>
 </html>
