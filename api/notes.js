@@ -1,7 +1,45 @@
 // Serverless function: receives PDF text, asks Google Gemini (free tier)
 // for either study notes (Markdown) or flashcards (JSON).
+// If Google is busy, it retries and falls back to another model.
 // Your API key stays here on the server, never in the browser.
-const MODEL = "gemini-flash-latest"; // if this ever fails, copy a current Flash model name from aistudio.google.com
+const MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"]; // tried in this order
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function askGemini(prompt, generationConfig) {
+  const started = Date.now();
+  let last = { status: 503, message: "The free AI is busy right now." };
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (Date.now() - started > 42000) return { ok: false, ...last }; // stay under the 60s limit
+      try {
+        const r = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent",
+          {
+            method: "POST",
+            headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
+          }
+        );
+        const data = await r.json();
+        if (r.ok) {
+          const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+          const text = parts.map(p => p.text || "").join("\n").trim();
+          if (text) return { ok: true, text };
+          last = { status: 502, message: "The AI returned nothing. Try again." };
+        } else {
+          const msg = (data.error && data.error.message) || "AI request failed.";
+          last = { status: r.status, message: msg };
+          const busy = r.status === 429 || r.status === 500 || r.status === 503 || /high demand|overloaded|unavailable/i.test(msg);
+          if (!busy) return { ok: false, ...last }; // real error (bad key, bad model name): stop
+        }
+      } catch (e) {
+        last = { status: 500, message: "Server error: " + e.message };
+      }
+      await sleep(2000);
+    }
+  }
+  return { ok: false, ...last };
+}
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
@@ -33,39 +71,25 @@ module.exports = async (req, res) => {
   const generationConfig = { maxOutputTokens: isCards ? 8000 : 4000 };
   if (isCards) generationConfig.responseMimeType = "application/json";
 
-  try {
-    const r = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
-      }
-    );
-    const data = await r.json();
-    if (r.status === 429) {
-      return res.status(429).json({ error: "Too many people are using the free AI right now. Please try again in a minute." });
-    }
-    if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || "AI request failed." });
-
-    const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
-    const out = parts.map(p => p.text || "").join("\n").trim();
-    if (!out) return res.status(502).json({ error: "The AI returned nothing. Try again." });
-
-    if (!isCards) return res.status(200).json({ notes: out });
-
-    let cards;
-    try {
-      cards = JSON.parse(out.replace(/^```json|```$/g, "").trim());
-    } catch {
-      return res.status(502).json({ error: "The AI gave a bad format. Please try again." });
-    }
-    cards = (Array.isArray(cards) ? cards : [])
-      .filter(c => c && typeof c.front === "string" && typeof c.back === "string")
-      .map(c => ({ front: c.front.trim(), back: c.back.trim() }));
-    if (!cards.length) return res.status(502).json({ error: "No flashcards were made. Try again." });
-    return res.status(200).json({ cards });
-  } catch (e) {
-    return res.status(500).json({ error: "Server error: " + e.message });
+  const result = await askGemini(prompt, generationConfig);
+  if (!result.ok) {
+    const busy = result.status === 429 || result.status === 503 || /high demand|overloaded/i.test(result.message);
+    return res.status(busy ? 503 : 502).json({
+      error: busy ? "The free AI is very busy right now. Please wait a minute and try again." : result.message
+    });
   }
+
+  if (!isCards) return res.status(200).json({ notes: result.text });
+
+  let cards;
+  try {
+    cards = JSON.parse(result.text.replace(/^```json|```$/g, "").trim());
+  } catch {
+    return res.status(502).json({ error: "The AI gave a bad format. Please try again." });
+  }
+  cards = (Array.isArray(cards) ? cards : [])
+    .filter(c => c && typeof c.front === "string" && typeof c.back === "string")
+    .map(c => ({ front: c.front.trim(), back: c.back.trim() }));
+  if (!cards.length) return res.status(502).json({ error: "No flashcards were made. Try again." });
+  return res.status(200).json({ cards });
 };
