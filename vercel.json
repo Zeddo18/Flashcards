@@ -1,0 +1,5 @@
+{
+  "functions": {
+    "api/notes.js": { "maxDuration": 60, "memory": 1024 }
+  }
+}
