@@ -5,7 +5,7 @@
 const MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"]; // tried in this order
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function askGemini(prompt, generationConfig) {
+async function askGemini(prompt, generationConfig, imgs = []) {
   const started = Date.now();
   let last = { status: 503, message: "The free AI is busy right now." };
   for (const model of MODELS) {
@@ -17,7 +17,7 @@ async function askGemini(prompt, generationConfig) {
           {
             method: "POST",
             headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig })
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, ...imgs.map(d => ({ inline_data: { mime_type: "image/jpeg", data: d } }))] }], generationConfig })
           }
         );
         const data = await r.json();
@@ -44,15 +44,17 @@ async function askGemini(prompt, generationConfig) {
 module.exports = async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
-  const { text, pages, detail, mode, count } = req.body || {};
-  if (typeof text !== "string" || text.trim().length < 50) {
-    return res.status(400).json({ error: "No readable text was sent." });
+  const { text, pages, detail, mode, count, images, lang, style } = req.body || {};
+  const t = typeof text === "string" ? text : "";
+  const imgs = Array.isArray(images) ? images.filter(x => typeof x === "string").slice(0, 8) : [];
+  if (t.trim().length < 50 && !imgs.length) {
+    return res.status(400).json({ error: "No readable content was sent." });
   }
   if (!process.env.GEMINI_API_KEY) {
     return res.status(500).json({ error: "Server is missing GEMINI_API_KEY." });
   }
 
-  const doc = "DOCUMENT (" + (Number(pages) || "?") + " pages):\n" + text.slice(0, 80000);
+  const doc = "DOCUMENT (" + (Number(pages) || "?") + " pages)" + (imgs.length ? " is attached as page pictures. Read the pictures.\n" + t.slice(0, 80000) : ":\n" + t.slice(0, 80000));
   const isCards = mode === "flashcards";
   const n = Math.min(Math.max(parseInt(count, 10) || 20, 5), 40);
   const level = ["concise", "balanced", "detailed"].includes(detail) ? detail : "balanced";
@@ -68,10 +70,12 @@ module.exports = async (req, res) => {
       "Add a '## Key Terms' list with short definitions, and end with '## Quick Review Questions' containing 5 numbered questions. " +
       "Use only information from the document. Output only the notes.\n\n" + doc;
 
+  const styleTxt = { cloze: "Card style: each front is a sentence from the document with the key term replaced by ____, and the back is the missing term plus one short explanation.\n", tf: "Card style: each front is a statement that is either true or false, and the back starts with True or False followed by a one-sentence reason. Make about half of the statements false.\n" }[style] || "";
+  const extra = (isCards ? styleTxt : "") + (typeof lang === "string" && lang.trim() ? "Write everything in " + lang.trim().slice(0, 30) + ".\n" : "");
   const generationConfig = { maxOutputTokens: isCards ? 8000 : 4000 };
   if (isCards) generationConfig.responseMimeType = "application/json";
 
-  const result = await askGemini(prompt, generationConfig);
+  const result = await askGemini(extra + prompt, generationConfig, imgs);
   if (!result.ok) {
     const busy = result.status === 429 || result.status === 503 || /high demand|overloaded/i.test(result.message);
     return res.status(busy ? 503 : 502).json({
