@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3d5afe">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Flashcards">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <title>PDF to Flashcards</title>
 <style>
 :root{--bg:#15171c;--fg:#f2f2f2;--mut:#b5b5b5;--card:rgba(255,255,255,.08);--bd:rgba(255,255,255,.18);--acc:#7c93ff;--back:rgba(255,255,255,.16)}
@@ -50,6 +57,26 @@ input[type=number]{font:inherit;padding:8px;border-radius:10px;border:1px solid 
 .qopt{display:block;width:100%;text-align:left;margin:8px 0}
 .qopt.ok{border-color:#3ecf8e;background:rgba(62,207,142,.22)}
 .qopt.no{border-color:#ff6b6b;background:rgba(255,107,107,.22)}
+button,select,input{touch-action:manipulation}
+main{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right));padding-bottom:max(60px,env(safe-area-inset-bottom))}
+@media (max-width:600px){
+  h1{font-size:1.4rem}
+  main{padding-top:16px}
+  button,select{min-height:44px;font-size:16px}
+  input[type=number]{min-height:44px;font-size:16px}
+  .row{gap:8px}
+  .row.center button{flex:1 1 45%}
+  .tabs button{flex:1}
+  .bgbox{width:100%}
+  .sw{width:30px;height:30px}
+  #card{height:230px}
+  .face{font-size:1.1rem;padding:18px}
+  .face.b{font-size:1rem}
+  .deckitem{flex-direction:column;align-items:stretch}
+  .deckitem .btns button{flex:1}
+  #cardOpt,#cardOpt select{width:100%}
+  #lang{width:100%}
+}
 /* notes */
 #out{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:6px 22px 18px;margin-top:14px;overflow-x:auto}
 #out h1{font-size:1.4rem;margin:.9em 0 .3em}
@@ -218,6 +245,7 @@ $("tabCreate").onclick = () => { statusEl.textContent = ""; show("create"); };
 $("tabSaved").onclick = () => { statusEl.textContent = ""; show("saved"); };
 $("backSaved").onclick = () => show("saved");
 $("again").onclick = () => { statusEl.textContent = ""; fileInput.value = ""; show("create"); };
+if (matchMedia("(pointer: coarse)").matches) { drop.querySelector("b").textContent = "Tap to choose your PDF"; drop.querySelector("span").textContent = "from your phone files or Google Drive"; }
 $("mode").onchange = () => $("cardOpt").classList.toggle("hide", $("mode").value !== "flashcards");
 
 /* ---------- saved decks ---------- */
