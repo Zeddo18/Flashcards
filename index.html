@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF to Flashcards</title>
+<style>
+:root{--bg:#faf8f4;--fg:#1f1d1a;--mut:#6b665e;--card:#fff;--acc:#3d5afe;--bd:#e3ded5;--back:#eef1ff}
+@media (prefers-color-scheme:dark){:root{--bg:#15171c;--fg:#ecebe8;--mut:#9a978f;--card:#1e2128;--acc:#7c93ff;--bd:#2f333c;--back:#252b45}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:1.7rem;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 22px}
+#drop{border:2px dashed var(--bd);border-radius:16px;background:var(--card);padding:38px 18px;text-align:center;cursor:pointer}
+#drop.over{border-color:var(--acc)}
+#drop b{display:block;font-size:1.1rem;margin-bottom:4px}
+#drop span{color:var(--mut);font-size:.92rem}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
+select,button{font:inherit;padding:8px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--fg);cursor:pointer}
+button.p{background:var(--acc);border-color:var(--acc);color:#fff}
+#status{color:var(--mut);font-size:.95rem;min-height:1.4em}
+.hide{display:none}
+/* flashcards */
+#count{text-align:center;color:var(--mut);margin:10px 0 6px}
+#card{perspective:1000px;height:260px;cursor:pointer;margin:0 auto}
+#inner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+#card.flip #inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;border:1px solid var(--bd);border-radius:18px;background:var(--card);font-size:1.25rem;overflow:auto}
+.face.b{transform:rotateY(180deg);background:var(--back);font-size:1.05rem}
+.tag{position:absolute;top:10px;left:14px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+#nav{justify-content:center}
+/* notes */
+#out{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:6px 22px 18px;margin-top:14px;overflow-x:auto}
+#out h1{font-size:1.4rem;margin:.9em 0 .3em}
+#out h2{font-size:1.15rem;margin:1.2em 0 .3em;color:var(--acc)}
+#out h3{font-size:1rem;margin:1em 0 .2em}
+#out ul,#out ol{padding-left:22px;margin:.3em 0}
+#out p{margin:.5em 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>PDF to Flashcards</h1>
+  <p class="sub">Drop in a PDF and AI turns it into flashcards (or study notes).</p>
+
+  <div id="drop" tabindex="0">
+    <b>Drop your PDF here</b>
+    <span>or click to choose a file</span>
+    <input id="file" type="file" accept="application/pdf" class="hide">
+  </div>
+
+  <div class="row" id="opts">
+    <label for="mode">Make:</label>
+    <select id="mode">
+      <option value="flashcards" selected>Flashcards</option>
+      <option value="notes">Study notes</option>
+    </select>
+    <span id="cardOpt"><label for="count">Cards:</label>
+    <select id="count"><option>10</option><option selected>20</option><option>30</option><option>40</option></select></span>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="deck" class="hide">
+    <div id="count-label"></div>
+    <div id="cnt"></div>
+    <div id="card"><div id="inner">
+      <div class="face"><span class="tag">Question</span><span id="front"></span></div>
+      <div class="face b"><span class="tag">Answer</span><span id="back"></span></div>
+    </div></div>
+    <div class="row" id="nav">
+      <button id="prev">&larr; Prev</button>
+      <button id="flip" class="p">Flip</button>
+      <button id="next">Next &rarr;</button>
+    </div>
+    <div class="row" id="nav2" style="justify-content:center">
+      <button id="shuffle">Shuffle</button>
+      <button id="csv">Download CSV</button>
+      <button id="again1">New PDF</button>
+    </div>
+  </div>
+
+  <div id="notes" class="hide">
+    <div class="row">
+      <button id="copy">Copy</button>
+      <button id="save">Download .md</button>
+      <button id="again2" class="p">New PDF</button>
+    </div>
+    <div id="out"></div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const drop = $("drop"), fileInput = $("file"), statusEl = $("status");
+let cards = [], idx = 0, flipped = false, notesMd = "", busy = false;
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+$("mode").onchange = () => $("cardOpt").classList.toggle("hide", $("mode").value !== "flashcards");
+drop.onclick = () => fileInput.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") fileInput.click(); };
+fileInput.onchange = () => fileInput.files[0] && handle(fileInput.files[0]);
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) handle(f); });
+
+function reset() {
+  $("deck").classList.add("hide"); $("notes").classList.add("hide");
+  drop.classList.remove("hide"); $("opts").classList.remove("hide");
+  statusEl.textContent = ""; fileInput.value = "";
+}
+$("again1").onclick = reset; $("again2").onclick = reset;
+
+/* flashcards */
+function showCard() {
+  const c = cards[idx];
+  $("front").textContent = c.front; $("back").textContent = c.back;
+  $("cnt").textContent = "Card " + (idx + 1) + " of " + cards.length;
+  $("cnt").style.cssText = "text-align:center;color:var(--mut);margin:10px 0 6px";
+}
+function go(step) {
+  flipped = false; $("card").classList.remove("flip");
+  idx = (idx + step + cards.length) % cards.length;
+  setTimeout(showCard, 180);
+}
+$("card").onclick = $("flip").onclick = () => { flipped = !flipped; $("card").classList.toggle("flip", flipped); };
+$("prev").onclick = () => go(-1);
+$("next").onclick = () => go(1);
+$("shuffle").onclick = () => {
+  for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
+  idx = 0; go(0);
+};
+document.addEventListener("keydown", e => {
+  if ($("deck").classList.contains("hide")) return;
+  if (e.key === "ArrowRight") go(1);
+  else if (e.key === "ArrowLeft") go(-1);
+  else if (e.key === " ") { e.preventDefault(); $("flip").click(); }
+});
+function download(name, data, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([data], { type }));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+$("csv").onclick = () => {
+  const q = s => '"' + s.replace(/"/g, '""') + '"';
+  download("flashcards.csv", cards.map(c => q(c.front) + "," + q(c.back)).join("\n"), "text/csv");
+};
+
+/* notes */
+$("copy").onclick = async () => { try { await navigator.clipboard.writeText(notesMd); statusEl.textContent = "Copied."; } catch { statusEl.textContent = "Copy failed."; } };
+$("save").onclick = () => download("study-notes.md", notesMd, "text/markdown");
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<i>$1</i>"); }
+function render(md) {
+  let html = "", list = null;
+  const close = () => { if (list) { html += "</" + list + ">"; list = null; } };
+  for (const line of md.split("\n")) {
+    let m;
+    if ((m = line.match(/^(#{1,3})\s+(.*)/))) { close(); html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`; }
+    else if ((m = line.match(/^\s*[-*]\s+(.*)/))) { if (list !== "ul") { close(); html += "<ul>"; list = "ul"; } html += "<li>" + inline(m[1]) + "</li>"; }
+    else if ((m = line.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== "ol") { close(); html += "<ol>"; list = "ol"; } html += "<li>" + inline(m[1]) + "</li>"; }
+    else if (line.trim()) { close(); html += "<p>" + inline(line) + "</p>"; }
+    else close();
+  }
+  close();
+  return html;
+}
+
+async function extractText(file) {
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  let text = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const c = await page.getTextContent();
+    text += c.items.map(x => x.str).join(" ") + "\n\n";
+    statusEl.textContent = "Reading page " + i + " of " + pdf.numPages + "...";
+    if (text.length > 80000) break;
+  }
+  return { text: text.slice(0, 80000), pages: pdf.numPages };
+}
+
+async function handle(file) {
+  if (busy) return;
+  if (!file.name.toLowerCase().endsWith(".pdf")) { statusEl.textContent = "Please choose a PDF file."; return; }
+  busy = true;
+  try {
+    const { text, pages } = await extractText(file);
+    if (text.trim().length < 50) { statusEl.textContent = "No readable text found. This may be a scanned PDF."; busy = false; return; }
+    const mode = $("mode").value;
+    statusEl.textContent = "AI is working (this can take up to a minute)...";
+    const r = await fetch("/api/notes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text, pages, mode, count: $("count").value })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || "Request failed.");
+    drop.classList.add("hide"); $("opts").classList.add("hide");
+    if (mode === "flashcards") {
+      cards = data.cards; idx = 0; flipped = false; $("card").classList.remove("flip");
+      showCard(); $("deck").classList.remove("hide");
+      statusEl.textContent = cards.length + " flashcards ready. Click the card or press Space to flip.";
+    } else {
+      notesMd = data.notes; $("out").innerHTML = render(notesMd);
+      $("notes").classList.remove("hide"); statusEl.textContent = "Done.";
+    }
+  } catch (e) {
+    statusEl.textContent = "Something went wrong: " + e.message;
+  }
+  busy = false;
+}
+</script>
+</body>
+</html>
