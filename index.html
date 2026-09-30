@@ -68,7 +68,7 @@ button.icon{padding:9px 12px;min-width:42px;font-size:1.05rem}
 button.big{padding:13px 20px;font-size:1rem;font-weight:600;flex:1}
 button[disabled]{opacity:.4;cursor:not-allowed;pointer-events:none}
 
-select,input[type=number],input[type=text],textarea{
+select,input[type=number],input[type=text],input[type=url],textarea{
   font:inherit;color:var(--fg);padding:9px 12px;
   border-radius:var(--r);border:1px solid var(--bd);background:var(--card);
 }
@@ -83,13 +83,118 @@ label{color:var(--mut);font-size:.9rem}
 .row.tight{margin:8px 0}
 .center{justify-content:center}
 
-#drop{border:2px dashed var(--bd);border-radius:var(--r2);background:var(--card2);
-  padding:44px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+/* ============ SOURCE TABS ============ */
+.source-tabs{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+  padding:4px;border-radius:var(--r2);
+  background:var(--card2);border:1px solid var(--bd);margin-bottom:14px;
+}
+.src-tab{
+  background:transparent;border:none;color:var(--mut);font-weight:500;font-size:.9rem;
+  padding:10px 8px;border-radius:12px;cursor:pointer;transition:all .15s;
+}
+.src-tab:hover{color:var(--fg);background:var(--card)}
+.src-tab.on{background:var(--card);color:var(--fg);border:1px solid var(--bd2)}
+.src-panel{margin-bottom:4px}
+
+/* ============ DROP ZONE ============ */
+#drop{
+  position:relative;border:2px dashed var(--bd);border-radius:var(--r2);
+  background:var(--card2);padding:44px 20px 40px;text-align:center;cursor:pointer;
+  transition:border-color .15s,background .15s,transform .15s;
+  overflow:hidden;
+}
 #drop:hover{border-color:var(--bd2);background:var(--card)}
-#drop.over{border-color:var(--acc);background:rgba(124,147,255,.08)}
+#drop.over{
+  border-color:var(--acc);background:rgba(124,147,255,.10);
+  transform:scale(1.01);
+}
+#drop.over .drop-icon{transform:translateY(-4px) scale(1.12)}
+#drop.over b{color:var(--acc)}
+.drop-icon{
+  font-size:2rem;line-height:1;margin-bottom:10px;display:block;
+  transition:transform .2s ease;
+}
 #drop b{display:block;font-size:1.08rem;margin-bottom:4px}
 #drop span{color:var(--mut);font-size:.9rem}
+#drop::after{
+  content:"";position:absolute;inset:0;border-radius:var(--r2);
+  box-shadow:inset 0 0 0 0 rgba(124,147,255,0);
+  transition:box-shadow .3s;
+  pointer-events:none;
+}
+#drop.over::after{box-shadow:inset 0 0 30px 0 rgba(124,147,255,.25)}
 
+/* ============ FILE LIST ============ */
+.filelist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.filerow{
+  display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;
+  padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r);
+  background:var(--card);font-size:.9rem;
+  animation:slideIn .18s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.filerow.reading{border-color:var(--acc);background:rgba(124,147,255,.08)}
+.filerow.ready{border-color:rgba(62,207,142,.35)}
+.filerow.error{border-color:rgba(255,107,107,.35);background:rgba(255,107,107,.06)}
+.filerow .fstat{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:50%;font-size:.75rem;
+  background:var(--card2);border:1px solid var(--bd);
+}
+.filerow.reading .fstat{border-color:var(--acc);background:rgba(124,147,255,.18)}
+.filerow.ready .fstat{border-color:rgba(62,207,142,.5);background:rgba(62,207,142,.2);color:#a7eccb}
+.filerow.error .fstat{border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.2);color:#ff9a9a}
+.filerow .fstat.spin{
+  animation:spin 1.2s linear infinite;
+  border-color:transparent;border-top-color:var(--acc);
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.filerow .fbody{min-width:0}
+.filerow .fname{
+  font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.filerow .fmeta{color:var(--mut);font-size:.78rem;margin-top:2px}
+.filerow .fdel{
+  padding:5px 9px;font-size:.75rem;background:transparent;border-color:transparent;
+  color:var(--mut);
+}
+.filerow .fdel:hover{color:#ff9a9a;background:rgba(255,107,107,.1)}
+.filelist-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:4px}
+
+/* ============ URL PANEL ============ */
+.url-row{display:flex;gap:8px;align-items:stretch}
+.url-row input{flex:1;min-width:0}
+.url-row button{flex-shrink:0}
+.hint-line{color:var(--mut);font-size:.8rem;margin-top:8px;line-height:1.5}
+#urlResult{margin-top:10px;font-size:.9rem}
+#urlResult .ok{
+  padding:10px 12px;border-radius:var(--r);
+  background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.35);color:#a7eccb;
+}
+#urlResult .err{
+  padding:10px 12px;border-radius:var(--r);
+  background:rgba(255,107,107,.10);border:1px solid rgba(255,107,107,.35);color:#ffb0b0;
+}
+#urlResult .load{
+  padding:10px 12px;border-radius:var(--r);
+  background:var(--card2);border:1px solid var(--bd);color:var(--mut);
+  display:flex;align-items:center;gap:8px;
+}
+#urlResult .load::before{
+  content:"";width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--bd2);border-top-color:var(--acc);
+  animation:spin .8s linear infinite;
+}
+
+/* ============ TEXT PANEL ============ */
+.textmeta{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:6px;font-size:.8rem;color:var(--mut);
+}
+#rawText{min-height:180px;font-size:.94rem;background:var(--card)}
+
+/* ============ TOOLBAR / FOCUS ============ */
 .toolbar{
   display:flex;gap:10px;flex-wrap:wrap;align-items:center;
   padding:14px;border:1px solid var(--bd);border-radius:var(--r2);
@@ -100,7 +205,6 @@ label{color:var(--mut);font-size:.9rem}
 #cardOpt{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 #cardOpt.hide{display:none}
 
-/* focus panel */
 .focusbox{
   display:flex;flex-direction:column;gap:8px;
   padding:14px;border:1px solid var(--bd);border-radius:var(--r2);
@@ -109,8 +213,6 @@ label{color:var(--mut);font-size:.9rem}
 .focusbox label{font-size:.85rem}
 .focusbox .hint{color:var(--mut);font-size:.78rem;margin-top:-4px}
 .focusbox textarea{min-height:58px;font-size:.92rem;background:var(--card)}
-
-/* preset chips */
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip-btn{
   padding:5px 10px;border-radius:999px;font-size:.78rem;
@@ -118,6 +220,44 @@ label{color:var(--mut);font-size:.9rem}
   cursor:pointer;transition:all .15s;
 }
 .chip-btn:hover{color:var(--fg);border-color:var(--bd2);background:var(--card)}
+
+/* ============ PROGRESS ============ */
+#progress{
+  margin-top:16px;padding:14px 16px;
+  border:1px solid var(--bd);border-radius:var(--r2);
+  background:var(--card2);
+  animation:slideIn .2s ease;
+}
+.prog-wrap{
+  height:8px;border-radius:999px;overflow:hidden;background:var(--bd);
+  margin-bottom:10px;
+}
+.prog-fill{
+  height:100%;width:0%;border-radius:999px;
+  background:linear-gradient(90deg,var(--acc),#a5b7ff);
+  transition:width .35s ease;
+}
+#progress.ai .prog-fill{
+  background:linear-gradient(90deg,var(--acc) 0%,#a5b7ff 25%,var(--acc) 50%,#a5b7ff 75%,var(--acc) 100%);
+  background-size:200% 100%;
+  animation:slideGradient 2.2s linear infinite;
+}
+@keyframes slideGradient{from{background-position:0% 0}to{background-position:-200% 0}}
+.prog-step{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  font-size:.9rem;color:var(--fg);
+}
+.prog-step .pct{color:var(--mut);font-size:.82rem;font-variant-numeric:tabular-nums}
+#progress.done .prog-fill{background:var(--ok)}
+#progress.error .prog-fill{background:var(--bad)}
+
+/* ============ EXISTING (unchanged) ============ */
+#summary{
+  text-align:center;padding:40px 20px;border:1px solid var(--bd);
+  border-radius:var(--r2);background:var(--card2);margin-top:20px;
+}
+#summary .big{font-size:2.4rem;font-weight:700;margin:6px 0}
+#summary .lbl{color:var(--mut);font-size:.9rem;margin:0}
 
 .deckitem{
   display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
@@ -168,10 +308,7 @@ label{color:var(--mut);font-size:.9rem}
 
 .navrow{display:flex;gap:8px;margin:16px 0 8px;align-items:stretch}
 .ratebar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 0}
-.rate{
-  flex-direction:column;gap:1px;padding:11px 6px;font-weight:600;font-size:.9rem;
-  border-width:1px;
-}
+.rate{flex-direction:column;gap:1px;padding:11px 6px;font-weight:600;font-size:.9rem;border-width:1px}
 .rate small{font-size:.7rem;opacity:.7;font-weight:500}
 .rate.r0{color:#ffb0b0;border-color:rgba(255,107,107,.3)}
 .rate.r0:hover{background:rgba(255,107,107,.15)}
@@ -191,10 +328,7 @@ details.tools>summary::-webkit-details-marker{display:none}
 details.tools>summary::after{content:"▾";transition:transform .2s;font-size:.8rem}
 details.tools[open]>summary::after{transform:rotate(180deg)}
 details.tools>summary:hover{color:var(--fg);background:var(--card)}
-.toolgrid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-  gap:8px;padding:4px 14px 14px;
-}
+.toolgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;padding:4px 14px 14px}
 .toolgrid button{justify-content:flex-start;padding:9px 12px;font-size:.88rem;background:var(--card)}
 details.sub{grid-column:1/-1;border:1px solid var(--bd);border-radius:var(--r);background:var(--card2)}
 details.sub>summary{padding:9px 12px;cursor:pointer;font-size:.88rem;font-weight:500;list-style:none;color:var(--mut)}
@@ -202,25 +336,15 @@ details.sub>summary::-webkit-details-marker{display:none}
 details.sub>summary:hover{color:var(--fg)}
 details.sub .toolgrid{padding:4px 10px 10px}
 
-#summary{
-  text-align:center;padding:40px 20px;border:1px solid var(--bd);
-  border-radius:var(--r2);background:var(--card2);margin-top:20px;
-}
-#summary .big{font-size:2.4rem;font-weight:700;margin:6px 0}
-#summary .lbl{color:var(--mut);font-size:.9rem;margin:0}
-
-/* ===== CARD EDITOR ===== */
+/* card editor */
 #editList{margin-top:6px}
 .editrow{
   display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:start;
   border:1px solid var(--bd);border-radius:var(--r);
-  background:var(--card);padding:10px;margin:8px 0;
-  transition:border-color .15s;
+  background:var(--card);padding:10px;margin:8px 0;transition:border-color .15s;
 }
 .editrow:focus-within{border-color:var(--acc)}
-.editnum{
-  font-weight:600;color:var(--mut);font-size:.85rem;padding-top:10px;text-align:center;
-}
+.editnum{font-weight:600;color:var(--mut);font-size:.85rem;padding-top:10px;text-align:center}
 .editfields{display:flex;flex-direction:column;gap:6px;min-width:0}
 .editfields textarea{
   width:100%;font:inherit;font-size:.94rem;color:var(--fg);
@@ -295,6 +419,8 @@ button,select,input,textarea{touch-action:manipulation}
   main{padding-top:14px}
   button,select{min-height:42px;font-size:15px}
   .tabs .tab{padding:9px 10px;font-size:.92rem}
+  .source-tabs{grid-template-columns:1fr 1fr 1fr;gap:2px}
+  .src-tab{padding:9px 4px;font-size:.8rem}
   #card{height:240px}
   .face{font-size:1.1rem;padding:36px 18px 18px}
   .face.b{font-size:1rem}
@@ -309,6 +435,8 @@ button,select,input,textarea{touch-action:manipulation}
   .editrow{grid-template-columns:26px 1fr}
   .editdel{grid-column:1/-1;width:100%}
   .editbar button{flex:1 1 100%}
+  .url-row{flex-direction:column}
+  .url-row button{width:100%}
 }
 </style>
 </head>
@@ -317,7 +445,7 @@ button,select,input,textarea{touch-action:manipulation}
   <div class="top">
     <div>
       <h1>Flashcards</h1>
-      <p class="sub">Turn PDFs into spaced-repetition cards and study notes.</p>
+      <p class="sub">Turn PDFs, articles, or pasted text into spaced-repetition cards.</p>
     </div>
     <div class="bgbox" id="bgbox"><small>Theme</small></div>
   </div>
@@ -332,11 +460,46 @@ button,select,input,textarea{touch-action:manipulation}
 
   <!-- ============ CREATE ============ -->
   <div id="createView">
-    <div id="drop" tabindex="0">
-      <b>Drop your PDF here</b>
-      <span>or click to choose a file</span>
-      <input id="file" type="file" accept="application/pdf" class="hide">
+    <div class="source-tabs" id="sourceTabs">
+      <button class="src-tab on" data-src="pdf" type="button">📄 PDF files</button>
+      <button class="src-tab" data-src="text" type="button">📝 Paste text</button>
+      <button class="src-tab" data-src="url" type="button">🔗 From URL</button>
     </div>
+
+    <!-- PDF panel -->
+    <div class="src-panel" id="pdfSrc">
+      <div id="drop" tabindex="0" role="button" aria-label="Drop PDF files here">
+        <span class="drop-icon">📄</span>
+        <b>Drop PDF files here</b>
+        <span>or click to choose — multiple files allowed</span>
+        <input id="file" type="file" accept="application/pdf" multiple class="hide">
+      </div>
+      <div class="filelist" id="fileList"></div>
+    </div>
+
+    <!-- Text panel -->
+    <div class="src-panel hide" id="textSrc">
+      <textarea id="rawText" rows="10" placeholder="Paste or type your text here — chapter notes, an article, a transcript, anything goes."></textarea>
+      <div class="textmeta">
+        <span id="textCount">0 characters</span>
+        <button type="button" id="clearText" class="ghost">Clear</button>
+      </div>
+    </div>
+
+    <!-- URL panel -->
+    <div class="src-panel hide" id="urlSrc">
+      <div class="url-row">
+        <input id="urlInput" type="url" placeholder="https://en.wikipedia.org/wiki/Photosynthesis">
+        <button id="urlFetch" class="p" type="button">Fetch</button>
+      </div>
+      <div class="hint-line">
+        Paste an article, blog post, Wikipedia page, public Google Doc/Sheet, or a direct PDF link.
+        The server fetches it for you.
+      </div>
+      <div id="urlResult"></div>
+    </div>
+
+    <!-- Shared toolbar -->
     <div class="toolbar">
       <div class="field">
         <label for="mode">Make</label>
@@ -370,7 +533,7 @@ button,select,input,textarea{touch-action:manipulation}
           <option value="detailed">Detailed</option>
         </select>
       </div>
-      <div class="field">
+      <div class="field" id="pagesField">
         <label for="pFrom">Pages</label>
         <input id="pFrom" type="number" min="1" placeholder="from" style="width:70px">
         <input id="pTo" type="number" min="1" placeholder="to" style="width:70px">
@@ -378,7 +541,7 @@ button,select,input,textarea{touch-action:manipulation}
       <div class="field">
         <label for="lang">Language</label>
         <select id="lang">
-          <option value="">Same as PDF</option>
+          <option value="">Same as source</option>
           <option>English</option><option>Filipino</option><option>Cebuano</option><option>Spanish</option>
         </select>
       </div>
@@ -396,6 +559,18 @@ button,select,input,textarea{touch-action:manipulation}
         <button type="button" class="chip-btn" data-fill="Focus on causes, effects, and relationships between ideas.">Cause &amp; effect</button>
       </div>
       <div class="hint">Blank = cover the whole document evenly.</div>
+    </div>
+
+    <div class="row center" style="margin-top:16px">
+      <button id="generateBtn" class="p big" type="button">✨ Generate</button>
+    </div>
+
+    <div id="progress" class="hide">
+      <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-step">
+        <span id="progStep">Starting…</span>
+        <span class="pct" id="progPct">0%</span>
+      </div>
     </div>
   </div>
 
@@ -581,8 +756,12 @@ function store(key, val) {
 let decks    = load("fc_decks", []);
 let notesLib = load("fc_notes", []);
 let cur = null, cards = [], idx = 0, flipped = false, notesMd = "", busy = false, session = null;
-/* editor state */
 let editTarget = null, editCards = [], editReturn = "study";
+
+/* create-view state */
+let sourceMode = "pdf";
+let pdfFiles = [];   // { file|bytes, name, size, status, text, images, pages, error, pages_read }
+let urlData = null;  // { kind:"text"|"pdf", text?, data?, title?, name? }
 
 decks.forEach(d => d.cards.forEach(c => { if ("known" in c && !c.srs) delete c.known; }));
 
@@ -660,10 +839,11 @@ $("tabNotes").onclick  = () => { statusEl.textContent = ""; show("notesLib"); };
 $("backDecks").onclick = () => show("decks");
 $("quizBack").onclick  = () => show("study");
 $("noteBack").onclick  = () => show("notesLib");
-$("again").onclick     = () => { statusEl.textContent = ""; fileInput.value = ""; show("create"); };
+$("again").onclick     = () => { statusEl.textContent = ""; show("create"); };
 if (matchMedia("(pointer: coarse)").matches) {
-  drop.querySelector("b").textContent = "Tap to choose your PDF";
-  drop.querySelector("span").textContent = "from your phone files or Google Drive";
+  const b = drop.querySelector("b"), s = drop.querySelector("span");
+  if (b) b.textContent = "Tap to choose PDF files";
+  if (s) s.textContent = "multiple allowed — from Files or Google Drive";
 }
 function syncMode() {
   const isCards = $("mode").value === "flashcards";
@@ -680,6 +860,397 @@ $("focusChips").addEventListener("click", e => {
   ta.value = ta.value ? (ta.value.replace(/\s+$/, "") + " " + b.dataset.fill) : b.dataset.fill;
   ta.focus();
 });
+
+/* ========== SOURCE TABS ========== */
+function setSource(mode) {
+  sourceMode = mode;
+  document.querySelectorAll(".src-tab").forEach(b => b.classList.toggle("on", b.dataset.src === mode));
+  $("pdfSrc").classList.toggle("hide", mode !== "pdf");
+  $("textSrc").classList.toggle("hide", mode !== "text");
+  $("urlSrc").classList.toggle("hide", mode !== "url");
+  $("pagesField").classList.toggle("hide", mode !== "pdf");
+  statusEl.textContent = "";
+}
+document.querySelectorAll(".src-tab").forEach(b => {
+  b.onclick = () => setSource(b.dataset.src);
+});
+
+/* ========== MULTI-FILE DROP ========== */
+drop.onclick = () => fileInput.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } };
+fileInput.onchange = () => { addFiles([...fileInput.files]); fileInput.value = ""; };
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => {
+  e.preventDefault();
+  if (t === "dragleave" && drop.contains(e.relatedTarget)) return;
+  drop.classList.remove("over");
+}));
+drop.addEventListener("drop", e => {
+  const files = [...(e.dataTransfer.files || [])];
+  if (files.length) addFiles(files);
+});
+function addFiles(list) {
+  const pdfs = list.filter(f => f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf");
+  if (!pdfs.length) { statusEl.textContent = "Only PDF files are supported here."; return; }
+  pdfs.forEach(f => {
+    pdfFiles.push({
+      file: f, name: f.name, size: f.size,
+      status: "queued", text: "", images: [], pages: 0, pages_read: 0, error: ""
+    });
+  });
+  renderFileList();
+  statusEl.textContent = pdfFiles.length + " file(s) ready. Click Generate when you're ready.";
+}
+function fmtSize(b) {
+  if (b < 1024) return b + " B";
+  if (b < 1024*1024) return (b/1024).toFixed(0) + " KB";
+  return (b/1024/1024).toFixed(1) + " MB";
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function renderFileList() {
+  const box = $("fileList");
+  box.innerHTML = "";
+  pdfFiles.forEach((entry, i) => {
+    const row = document.createElement("div");
+    row.className = "filerow " + (entry.status === "reading" ? "reading"
+      : entry.status === "ready" ? "ready"
+      : entry.status === "error" ? "error" : "");
+    const stat = document.createElement("span");
+    stat.className = "fstat" + (entry.status === "reading" ? " spin" : "");
+    stat.textContent =
+      entry.status === "queued"  ? (i + 1) :
+      entry.status === "reading" ? "" :
+      entry.status === "ready"   ? "✓" :
+      entry.status === "error"   ? "!" : "•";
+    const body = document.createElement("div");
+    body.className = "fbody";
+    const nm = document.createElement("div");
+    nm.className = "fname"; nm.textContent = entry.name;
+    const meta = document.createElement("div");
+    meta.className = "fmeta";
+    if (entry.status === "queued")  meta.textContent = fmtSize(entry.size) + " — waiting";
+    else if (entry.status === "reading") {
+      meta.textContent = entry.pages
+        ? ("Reading page " + entry.pages_read + " of " + entry.pages + "…")
+        : "Opening…";
+    }
+    else if (entry.status === "ready")
+      meta.textContent = entry.pages + " page" + (entry.pages === 1 ? "" : "s") + " · " +
+        entry.text.length.toLocaleString() + " chars" +
+        (entry.images.length ? " · " + entry.images.length + " page image(s)" : "");
+    else if (entry.status === "error")
+      meta.textContent = entry.error || "Could not read.";
+    body.append(nm, meta);
+    const del = document.createElement("button");
+    del.className = "fdel"; del.type = "button"; del.textContent = "✕";
+    del.title = "Remove";
+    del.onclick = () => { pdfFiles.splice(i, 1); renderFileList(); };
+    row.append(stat, body, del);
+    box.appendChild(row);
+  });
+  if (pdfFiles.length > 1) {
+    const actions = document.createElement("div");
+    actions.className = "filelist-actions";
+    const clear = document.createElement("button");
+    clear.type = "button"; clear.className = "ghost"; clear.textContent = "Clear all";
+    clear.onclick = () => { pdfFiles = []; renderFileList(); };
+    actions.appendChild(clear);
+    box.appendChild(actions);
+  }
+}
+
+/* ========== TEXT PANEL ========== */
+$("rawText").oninput = () => {
+  const n = $("rawText").value.length;
+  $("textCount").textContent = n.toLocaleString() + " character" + (n === 1 ? "" : "s");
+};
+$("clearText").onclick = () => { $("rawText").value = ""; $("rawText").oninput(); $("rawText").focus(); };
+
+/* ========== URL PANEL ========== */
+$("urlFetch").onclick = async () => {
+  const url = $("urlInput").value.trim();
+  if (!url) { $("urlInput").focus(); return; }
+  const out = $("urlResult");
+  $("urlFetch").disabled = true;
+  out.innerHTML = '<div class="load">Fetching the page…</div>';
+  urlData = null;
+  try {
+    const r = await fetch("/api/fetch-url", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+    if (data.kind === "pdf") {
+      urlData = { kind: "pdf", data: data.data, name: data.name || "downloaded.pdf" };
+      out.innerHTML = '<div class="ok">✅ Fetched PDF: <b>' + escHtml(urlData.name) + '</b></div>';
+    } else {
+      urlData = { kind: "text", text: data.text, title: data.title || "Imported page" };
+      out.innerHTML = '<div class="ok">✅ Fetched <b>' + escHtml(urlData.title) + '</b> — ' +
+        data.text.length.toLocaleString() + ' characters</div>';
+    }
+  } catch (e) {
+    urlData = null;
+    out.innerHTML = '<div class="err">❌ ' + escHtml(e.message) + '</div>';
+  } finally {
+    $("urlFetch").disabled = false;
+  }
+};
+$("urlInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("urlFetch").click(); } });
+
+/* ========== PROGRESS ========== */
+let progAiTimer = null;
+function startProgress() {
+  $("progress").classList.remove("hide", "done", "error", "ai");
+  setProgress(0, "Starting…");
+}
+function setProgress(pct, label, extra) {
+  $("progFill").style.width = Math.max(0, Math.min(100, pct)) + "%";
+  $("progPct").textContent = Math.round(Math.max(0, Math.min(100, pct))) + "%";
+  if (label) $("progStep").textContent = label;
+}
+function startAiPhase() {
+  $("progress").classList.add("ai");
+  const start = Date.now();
+  const est = 25000;
+  const tick = () => {
+    const t = Math.min(1, (Date.now() - start) / est);
+    setProgress(50 + t * 40, t < 0.4 ? "AI is reading the content…"
+      : t < 0.75 ? "Generating…" : "Almost done…");
+    if (t < 1) progAiTimer = setTimeout(tick, 250);
+  };
+  clearTimeout(progAiTimer);
+  tick();
+}
+function finishProgress(msg, isError) {
+  clearTimeout(progAiTimer);
+  $("progress").classList.remove("ai");
+  $("progress").classList.add(isError ? "error" : "done");
+  setProgress(100, msg || "Done!");
+}
+function hideProgressLater() {
+  setTimeout(() => { $("progress").classList.add("hide"); }, 1200);
+}
+
+/* ========== PDF EXTRACT ========== */
+async function extractText(source, from, to, onProgress) {
+  const pdf = await pdfjsLib.getDocument({ data: await source.arrayBuffer() }).promise;
+  const a = Math.max(1, from || 1), b = Math.min(pdf.numPages, to || pdf.numPages);
+  if (onProgress) onProgress(0, pdf.numPages);
+  let text = "";
+  for (let i = a; i <= b; i++) {
+    const page = await pdf.getPage(i);
+    const c = await page.getTextContent();
+    text += c.items.map(x => x.str).join(" ") + "\n\n";
+    if (onProgress) onProgress(i - a + 1, b - a + 1);
+    if (text.length > 80000) break;
+  }
+  const out = { text: text.slice(0, 80000), pages: Math.max(1, b - a + 1), images: [] };
+  if (text.trim().length < 50) {
+    for (let i = a; i <= Math.min(b, a + 7); i++) {
+      try {
+        const page = await pdf.getPage(i);
+        const w = page.getViewport({ scale: 1 }).width;
+        const v = page.getViewport({ scale: Math.min(1.5, 1000 / w) });
+        const cv = document.createElement("canvas");
+        cv.width = v.width; cv.height = v.height;
+        await page.render({ canvasContext: cv.getContext("2d"), viewport: v }).promise;
+        out.images.push(cv.toDataURL("image/jpeg", 0.6).split(",")[1]);
+      } catch {}
+    }
+  }
+  return out;
+}
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+function fileFromB64(b64, name) {
+  const bytes = b64ToBytes(b64);
+  return { name, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
+}
+
+/* ========== EXTRACT ALL PDFs ========== */
+async function extractAllPdfs(from, to) {
+  for (let i = 0; i < pdfFiles.length; i++) {
+    const entry = pdfFiles[i];
+    if (entry.status === "ready" && entry.text) continue;
+    entry.status = "reading";
+    entry.pages_read = 0;
+    renderFileList();
+    try {
+      const { text, pages, images } = await extractText(entry.file, from, to, (read, total) => {
+        entry.pages_read = read;
+        entry.pages = total;
+        renderFileList();
+        const done = pdfFiles.filter(f => f.status === "ready").length;
+        const pct = 3 + ((done + read / Math.max(1, total)) / pdfFiles.length) * 42;
+        setProgress(pct, `Reading ${entry.name} — page ${read} of ${total}`);
+      });
+      if (text.trim().length < 50 && !images.length) {
+        entry.status = "error";
+        entry.error = "No readable text found.";
+      } else {
+        entry.status = "ready";
+        entry.text = text;
+        entry.pages = pages;
+        entry.images = images;
+      }
+    } catch (e) {
+      entry.status = "error";
+      entry.error = e.message || "Failed to read.";
+    }
+    renderFileList();
+  }
+}
+
+/* ========== GENERATE ========== */
+function deckNameFrom(files, urlTitle) {
+  if (files.length === 1) return files[0].name.replace(/\.pdf$/i, "").slice(0, 80);
+  if (files.length > 1) return (files[0].name.replace(/\.pdf$/i, "") + " + " + (files.length - 1) + " more").slice(0, 80);
+  if (urlTitle) return urlTitle.slice(0, 80);
+  return "Pasted text";
+}
+
+$("generateBtn").onclick = generate;
+async function generate() {
+  if (busy) return;
+
+  let text = "", images = [], pages = 1, deckName = "";
+
+  /* -- gather content by source -- */
+  if (sourceMode === "pdf") {
+    if (!pdfFiles.length) { statusEl.textContent = "Add at least one PDF file."; return; }
+    busy = true;
+    $("generateBtn").disabled = true;
+    startProgress();
+    setProgress(2, "Preparing files…");
+    await extractAllPdfs(parseInt($("pFrom").value) || 1, parseInt($("pTo").value) || 0);
+    const ready = pdfFiles.filter(f => f.status === "ready");
+    const failed = pdfFiles.filter(f => f.status === "error");
+    if (!ready.length) {
+      finishProgress("No readable content in any file.", true);
+      statusEl.textContent = "Every file failed to produce text. " +
+        (failed[0] ? failed[0].error : "");
+      busy = false; $("generateBtn").disabled = false; return;
+    }
+    text = ready.map(f => f.text).join("\n\n");
+    images = ready.flatMap(f => f.images);
+    pages  = ready.reduce((s, f) => s + (f.pages || 0), 0);
+    deckName = deckNameFrom(pdfFiles, null);
+    if (failed.length) statusEl.textContent = "Skipping " + failed.length + " unreadable file(s).";
+  } else if (sourceMode === "text") {
+    text = $("rawText").value.trim();
+    if (text.length < 50) { statusEl.textContent = "Paste at least 50 characters of text."; return; }
+    busy = true; $("generateBtn").disabled = true;
+    startProgress();
+    setProgress(15, "Preparing text…");
+    deckName = "Pasted text";
+    pages = 1;
+  } else if (sourceMode === "url") {
+    if (!urlData) { statusEl.textContent = "Click Fetch first, or paste a different URL."; return; }
+    busy = true; $("generateBtn").disabled = true;
+    startProgress();
+    if (urlData.kind === "text") {
+      text = urlData.text;
+      pages = 1;
+      deckName = urlData.title || "From URL";
+      setProgress(20, "Using fetched page…");
+    } else {
+      setProgress(10, "Opening the PDF…");
+      const fakeFile = fileFromB64(urlData.data, urlData.name);
+      try {
+        const { text: t, pages: p, images: im } = await extractText(fakeFile, 1, 0, (read, total) => {
+          const pct = 10 + (read / Math.max(1, total)) * 35;
+          setProgress(pct, `Reading page ${read} of ${total}…`);
+        });
+        if (t.trim().length < 50 && !im.length) {
+          finishProgress("No readable content in that PDF.", true);
+          statusEl.textContent = "That PDF had no extractable text (might be scanned images only).";
+          busy = false; $("generateBtn").disabled = false; return;
+        }
+        text = t; pages = p; images = im;
+        deckName = (urlData.name || "PDF").replace(/\.pdf$/i, "");
+      } catch (e) {
+        finishProgress("Couldn't read the PDF.", true);
+        statusEl.textContent = "Error: " + e.message;
+        busy = false; $("generateBtn").disabled = false; return;
+      }
+    }
+  }
+
+  /* -- build request -- */
+  const mode = $("mode").value;
+  const body = {
+    text: text.slice(0, 80000),
+    pages,
+    images: images.slice(0, 8),
+    mode,
+    count:      $("count").value,
+    style:      $("style").value,
+    detail:     $("detail").value,
+    difficulty: $("difficulty").value,
+    focus:      $("focus").value,
+    lang:       $("lang").value
+  };
+
+  setProgress(50, "Sending to the AI…");
+  startAiPhase();
+  statusEl.textContent = "AI is working (this can take up to a minute)…";
+
+  try {
+    const r = await fetch("/api/notes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || "Request failed.");
+
+    finishProgress("Done!");
+    hideProgressLater();
+
+    if (mode === "flashcards") {
+      const deck = {
+        id: Date.now().toString(36),
+        name: deckName,
+        cards: data.cards.map(c => ({ front: c.front, back: c.back })),
+        color: null, created: Date.now()
+      };
+      decks.unshift(deck);
+      const ok = store("fc_decks", decks);
+      $("nDecks").textContent = decks.length;
+      // clear source state so the user can make another
+      pdfFiles = []; renderFileList();
+      $("rawText").value = ""; $("rawText").oninput();
+      urlData = null; $("urlInput").value = ""; $("urlResult").innerHTML = "";
+      startSession(deck, "all");
+      statusEl.textContent = ok
+        ? 'Saved as "' + deck.name + '". Tip: ⚙ → Edit all cards to tweak them.'
+        : statusEl.textContent;
+    } else {
+      notesMd = data.notes;
+      $("genNoteTitle").textContent = deckName || "Study notes";
+      $("out2").innerHTML = renderMd(notesMd);
+      pdfFiles = []; renderFileList();
+      $("rawText").value = ""; $("rawText").oninput();
+      urlData = null; $("urlInput").value = ""; $("urlResult").innerHTML = "";
+      show("notes");
+      statusEl.textContent = "Done — use Save to library to keep this.";
+    }
+  } catch (e) {
+    finishProgress("Error", true);
+    statusEl.textContent = "Something went wrong: " + e.message;
+  } finally {
+    busy = false;
+    $("generateBtn").disabled = false;
+  }
+}
 
 /* ========== decks ========== */
 function renderDecks() {
@@ -880,7 +1451,6 @@ $("cardColor").oninput  = () => { if (cur && !cur.virtual) { cur.color = $("card
 $("cardColor").onchange = () => store("fc_decks", decks);
 $("resetColor").onclick = () => { if (cur && !cur.virtual) { cur.color = null; store("fc_decks", decks); styleCard(); } };
 
-/* quick single-card edit via prompts */
 $("edit").onclick = () => {
   const c = cards[idx]; if (!c) return;
   const f = prompt("Question:", c.front); if (f === null) return;
@@ -975,9 +1545,6 @@ function renderEditor() {
 $("editAdd").onclick = () => {
   editCards.push({ front: "", back: "" });
   renderEditor();
-  const tas = document.querySelectorAll(".editfront, .editfields textarea");
-  const fronts = document.querySelectorAll(".editfields textarea:first-of-type");
-  // focus the last front field
   const rows = document.querySelectorAll(".editrow");
   if (rows.length) {
     const last = rows[rows.length - 1];
@@ -987,13 +1554,12 @@ $("editAdd").onclick = () => {
 };
 function cancelEditor() {
   if (!editTarget) { show("decks"); return; }
-  // check for unsaved changes
   const orig = JSON.stringify(editTarget.cards.map(c => ({ f: c.front, b: c.back })));
   const now  = JSON.stringify(editCards.filter(c => (c.front||"").trim() || (c.back||"").trim())
     .map(c => ({ f: (c.front||"").trim(), b: (c.back||"").trim() })));
   if (orig !== now && !confirm("Discard your unsaved changes?")) return;
   editTarget = null; editCards = [];
-  if (editReturn === "study" && cur && !cur.virtual) { show("study"); }
+  if (editReturn === "study" && cur && !cur.virtual) show("study");
   else show("decks");
 }
 $("editBack").onclick = cancelEditor;
@@ -1010,7 +1576,6 @@ function saveEditor() {
   $("nDecks").textContent = decks.length;
   statusEl.textContent = ok ? "Saved " + cleaned.length + " card(s)" +
     (cleaned.length !== before ? " (" + (cleaned.length - before >= 0 ? "+" : "") + (cleaned.length - before) + ")" : "") + "." : statusEl.textContent;
-  // If we were studying this same deck, restart the session so cards are fresh
   if (editReturn === "study" && cur && cur.id === editTarget.id && !cur.virtual) {
     const tgt = editTarget;
     editTarget = null; editCards = [];
@@ -1212,7 +1777,7 @@ function renderNotesLib() {
   const list = $("notesList");
   list.innerHTML = "";
   if (!notesLib.length) {
-    list.innerHTML = '<p class="sub" style="margin-top:20px">No saved notes yet. Generate notes from a PDF and hit <b>Save to library</b>.</p>';
+    list.innerHTML = '<p class="sub" style="margin-top:20px">No saved notes yet. Generate notes and hit <b>Save to library</b>.</p>';
     return;
   }
   notesLib.forEach(n => {
@@ -1284,97 +1849,10 @@ $("copy").onclick = async () => {
 };
 $("save").onclick = () => download("study-notes.md", notesMd, "text/markdown");
 
-/* ========== PDF → AI ========== */
-drop.onclick = () => fileInput.click();
-drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } };
-fileInput.onchange = () => fileInput.files[0] && handle(fileInput.files[0]);
-["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
-["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
-drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) handle(f); });
-
-async function extractText(file, from, to) {
-  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-  const a = Math.max(1, from || 1), b = Math.min(pdf.numPages, to || pdf.numPages);
-  let text = "";
-  for (let i = a; i <= b; i++) {
-    const page = await pdf.getPage(i);
-    const c = await page.getTextContent();
-    text += c.items.map(x => x.str).join(" ") + "\n\n";
-    statusEl.textContent = "Reading page " + i + " of " + b + "…";
-    if (text.length > 80000) break;
-  }
-  const out = { text: text.slice(0, 80000), pages: Math.max(1, b - a + 1), images: [] };
-  if (text.trim().length < 50) {
-    for (let i = a; i <= Math.min(b, a + 7); i++) {
-      try {
-        statusEl.textContent = "Scanned PDF: reading page " + i + " as a picture…";
-        const page = await pdf.getPage(i);
-        const w = page.getViewport({ scale: 1 }).width;
-        const v = page.getViewport({ scale: Math.min(1.5, 1000 / w) });
-        const cv = document.createElement("canvas");
-        cv.width = v.width; cv.height = v.height;
-        await page.render({ canvasContext: cv.getContext("2d"), viewport: v }).promise;
-        out.images.push(cv.toDataURL("image/jpeg", 0.6).split(",")[1]);
-      } catch {}
-    }
-  }
-  return out;
-}
-
-async function handle(file) {
-  if (busy) return;
-  if (!file.name.toLowerCase().endsWith(".pdf")) { statusEl.textContent = "Please choose a PDF file."; return; }
-  busy = true;
-  try {
-    const { text, pages, images } = await extractText(file, parseInt($("pFrom").value) || 1, parseInt($("pTo").value) || 0);
-    if (text.trim().length < 50 && !images.length) { statusEl.textContent = "No readable content found in those pages."; busy = false; return; }
-    const mode = $("mode").value;
-    statusEl.textContent = "AI is working (this can take up to a minute)…";
-    const r = await fetch("/api/notes", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        text, pages, images, mode,
-        count:      $("count").value,
-        style:      $("style").value,
-        detail:     $("detail").value,
-        difficulty: $("difficulty").value,
-        focus:      $("focus").value,
-        lang:       $("lang").value
-      })
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || "Request failed.");
-    if (mode === "flashcards") {
-      const deck = {
-        id: Date.now().toString(36),
-        name: file.name.replace(/\.pdf$/i, "").slice(0, 80),
-        cards: data.cards.map(c => ({ front: c.front, back: c.back })),
-        color: null, created: Date.now()
-      };
-      decks.unshift(deck);
-      const ok = store("fc_decks", decks);
-      $("nDecks").textContent = decks.length;
-      startSession(deck, "all");
-      statusEl.textContent = ok
-        ? 'Saved as "' + deck.name + '". Tip: ⚙ → Edit all cards to tweak them before studying.'
-        : statusEl.textContent;
-    } else {
-      notesMd = data.notes;
-      $("genNoteTitle").textContent = file.name.replace(/\.pdf$/i, "").slice(0, 80) || "Study notes";
-      $("out2").innerHTML = renderMd(notesMd);
-      show("notes");
-      statusEl.textContent = "Done — use Save to library to keep this.";
-    }
-  } catch (e) {
-    statusEl.textContent = "Something went wrong: " + e.message;
-  }
-  busy = false;
-}
-
 /* ========== init ========== */
 $("nDecks").textContent = decks.length;
 $("nNotes").textContent = notesLib.length;
+setSource("pdf");
 (function importShared() {
   if (!location.hash.startsWith("#d=")) return;
   try {
