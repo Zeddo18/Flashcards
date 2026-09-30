@@ -1,5 +1,16 @@
 {
   "functions": {
-    "api/notes.js": { "maxDuration": 60, "memory": 1024 }
-  }
+    "api/notes.js":     { "maxDuration": 60, "memory": 1024 },
+    "api/fetch-url.js": { "maxDuration": 30, "memory": 512 }
+  },
+  "headers": [
+    {
+      "source": "/icons/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/manifest.json",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
+    }
+  ]
 }
