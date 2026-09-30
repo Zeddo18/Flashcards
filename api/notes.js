@@ -1,12 +1,13 @@
 // api/notes.js — serverless function (Vercel / Netlify-style handler)
 // Receives PDF text + optional page images, asks Google Gemini for either
 // study notes (Markdown) or flashcards (JSON).
+// Supports: difficulty (beginner/intermediate/advanced), custom focus prompt,
+// card style (qa/cloze/tf), output language, and notes detail level.
 // Falls back between models on transient errors, aborts before the platform timeout.
-// API key stays on the server via process.env.GEMINI_API_KEY.
 
 const MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
-const HARD_LIMIT_MS = 45000;   // stay under a 60s platform cap
-const PER_CALL_MS   = 22000;   // abort any single call that drags
+const HARD_LIMIT_MS = 45000;
+const PER_CALL_MS   = 22000;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function askGemini(prompt, generationConfig, imgs = []) {
@@ -53,12 +54,9 @@ async function askGemini(prompt, generationConfig, imgs = []) {
         } else {
           const msg = data?.error?.message || "AI request failed.";
           last = { status: r.status, message: msg };
-
-          // Fatal — retrying or switching models won't help
           if (r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404) {
             return { ok: false, ...last };
           }
-          // Anything else (429/500/502/503) is transient — keep trying
         }
       } catch (e) {
         const aborted = e.name === "AbortError";
@@ -76,31 +74,22 @@ async function askGemini(prompt, generationConfig, imgs = []) {
   return { ok: false, ...last };
 }
 
-/* Pull a JSON array out of whatever Gemini returned, even if it's messy. */
 function extractCardArray(raw) {
   if (!raw) return null;
   let s = String(raw).trim();
-
-  // strip ```json ... ``` fences (anywhere, not just at the ends)
   s = s.replace(/```(?:json)?/gi, "").trim();
-
-  // fast path: whole thing parses
   try {
     const v = JSON.parse(s);
     if (Array.isArray(v)) return v;
   } catch {}
-
-  // salvage: first [ ... last ]
   const a = s.indexOf("[");
   const b = s.lastIndexOf("]");
   if (a === -1 || b <= a) return null;
-
   let slice = s.slice(a, b + 1);
   try {
     const v = JSON.parse(slice);
     if (Array.isArray(v)) return v;
   } catch {
-    // drop a trailing incomplete object and close the array
     slice = slice.replace(/,\s*\{[^{}]*$/, "").replace(/,\s*$/, "") + "]";
     try {
       const v = JSON.parse(slice);
@@ -111,14 +100,13 @@ function extractCardArray(raw) {
 }
 
 module.exports = async (req, res) => {
-  // CORS (harmless if same-origin; useful if you test from another host)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "content-type");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
-  const { text, pages, detail, mode, count, images, lang, style } = req.body || {};
+  const { text, pages, detail, difficulty, focus, mode, count, images, lang, style } = req.body || {};
   const t = typeof text === "string" ? text : "";
   const imgs = Array.isArray(images)
     ? images.filter(x => typeof x === "string").slice(0, 8)
@@ -134,6 +122,8 @@ module.exports = async (req, res) => {
   const isCards = mode === "flashcards";
   const n = Math.min(Math.max(parseInt(count, 10) || 20, 5), 40);
   const level = ["concise", "balanced", "detailed"].includes(detail) ? detail : "balanced";
+  const diff  = ["beginner", "intermediate", "advanced"].includes(difficulty) ? difficulty : "intermediate";
+  const focusTxt = typeof focus === "string" ? focus.trim().slice(0, 400) : "";
 
   const doc =
     `DOCUMENT (${Number(pages) || "?"} pages)` +
@@ -141,15 +131,31 @@ module.exports = async (req, res) => {
       ? " is attached as page pictures. Read the pictures.\n" + t.slice(0, 80000)
       : ":\n" + t.slice(0, 80000));
 
+  /* ---- difficulty guide ---- */
+  const difficultyLine = isCards
+    ? (
+        diff === "beginner"
+          ? "Difficulty: BEGINNER. Use simple, everyday language. Test only basic recall of key terms and facts. Avoid jargon unless it's from the document. Short, direct questions.\n"
+          : diff === "advanced"
+          ? "Difficulty: ADVANCED. Use precise terminology from the document. Test deeper understanding: comparisons, cause/effect, applications, edge cases, and 'why' rather than 'what'. Assume the learner already knows the basics.\n"
+          : "Difficulty: INTERMEDIATE. Balanced questions that test solid understanding of the main concepts. Mix definitions with reasoning.\n"
+      )
+    : "";
+
+  /* ---- custom focus ---- */
+  const focusLine = focusTxt
+    ? `IMPORTANT — learner focus: ${focusTxt}\nRestrict or prioritize the material accordingly. If it says to skip something, don't include it. If it says to emphasize something, weight it heavily.\n`
+    : "";
+
   const prompt = isCards
     ? `You are a study assistant. Create exactly ${n} flashcards from the document below.
-Rules: each card tests one idea. The front is a short question or a term. The back is a clear, short answer (1–3 sentences). Cover the most important facts, definitions, and concepts across the whole document. No duplicates. Use only information from the document.
+${difficultyLine}${focusLine}Rules: each card tests one idea. The front is a short question or a term. The back is a clear, short answer (1–3 sentences). Cover the most important facts, definitions, and concepts across the whole document. No duplicates. Use only information from the document.
 Return ONLY a JSON array like [{"front":"...","back":"..."}].
 
 ${doc}`
     : `You are a study assistant. Turn the document text below into clear study notes in Markdown.
 Detail level: ${level}.
-Format: start with a # title, use ## for main sections, short bullet points, and **bold** for key terms. Add a "## Key Terms" list with short definitions, and end with "## Quick Review Questions" containing 5 numbered questions. Use only information from the document. Output only the notes.
+${focusLine}Format: start with a # title, use ## for main sections, short bullet points, and **bold** for key terms. Add a "## Key Terms" list with short definitions, and end with "## Quick Review Questions" containing 5 numbered questions. Use only information from the document. Output only the notes.
 
 ${doc}`;
 
@@ -186,9 +192,7 @@ ${doc}`;
 
   const raw = extractCardArray(result.text);
   if (!raw) {
-    return res.status(502).json({
-      error: "The AI gave a bad format. Please try again."
-    });
+    return res.status(502).json({ error: "The AI gave a bad format. Please try again." });
   }
 
   const cards = raw
