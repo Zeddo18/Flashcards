@@ -25,8 +25,7 @@ html,body{height:100%}
 body{
   margin:0;background:var(--bg);color:var(--fg);
   font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  transition:background .25s,color .25s;
-  -webkit-font-smoothing:antialiased;
+  transition:background .25s,color .25s;-webkit-font-smoothing:antialiased;
 }
 main{
   max-width:760px;margin:0 auto;padding:20px 18px 80px;
@@ -38,14 +37,12 @@ h1{font-size:1.55rem;margin:0 0 2px;letter-spacing:-.01em}
 h2{font-size:1.1rem;margin:0 0 10px}
 .sub{color:var(--mut);margin:0;font-size:.93rem}
 
-/* top bar */
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:18px}
 .bgbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--card2)}
 .bgbox small{color:var(--mut);font-size:.8rem}
 .sw{width:20px;height:20px;padding:0;border-radius:50%;border:2px solid var(--bd);cursor:pointer}
 .sw:hover{transform:scale(1.15)}
 
-/* tabs */
 .tabs{display:flex;gap:2px;margin:0 0 18px;border-bottom:1px solid var(--bd)}
 .tab{background:none;border:none;border-bottom:2px solid transparent;border-radius:0;
   padding:10px 14px;color:var(--mut);cursor:pointer;font:inherit;font-weight:500;
@@ -53,7 +50,6 @@ h2{font-size:1.1rem;margin:0 0 10px}
 .tab:hover{color:var(--fg)}
 .tab.on{color:var(--fg);border-bottom-color:var(--acc)}
 
-/* buttons */
 button{
   font:inherit;color:var(--fg);padding:9px 14px;border-radius:var(--r);
   border:1px solid var(--bd);background:var(--card);cursor:pointer;
@@ -72,11 +68,12 @@ button.icon{padding:9px 12px;min-width:42px;font-size:1.05rem}
 button.big{padding:13px 20px;font-size:1rem;font-weight:600;flex:1}
 button[disabled]{opacity:.4;cursor:not-allowed;pointer-events:none}
 
-select,input[type=number],input[type=text]{
+select,input[type=number],input[type=text],textarea{
   font:inherit;color:var(--fg);padding:9px 12px;
   border-radius:var(--r);border:1px solid var(--bd);background:var(--card);
 }
 select option{color:#111}
+textarea{resize:vertical;font-family:inherit;width:100%;min-height:60px}
 input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--bd);border-radius:8px;background:none;cursor:pointer}
 input[type=range]{accent-color:var(--acc)}
 label{color:var(--mut);font-size:.9rem}
@@ -85,9 +82,7 @@ label{color:var(--mut);font-size:.9rem}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
 .row.tight{margin:8px 0}
 .center{justify-content:center}
-.spread{justify-content:space-between}
 
-/* drop zone */
 #drop{border:2px dashed var(--bd);border-radius:var(--r2);background:var(--card2);
   padding:44px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
 #drop:hover{border-color:var(--bd2);background:var(--card)}
@@ -95,7 +90,6 @@ label{color:var(--mut);font-size:.9rem}
 #drop b{display:block;font-size:1.08rem;margin-bottom:4px}
 #drop span{color:var(--mut);font-size:.9rem}
 
-/* toolbar */
 .toolbar{
   display:flex;gap:10px;flex-wrap:wrap;align-items:center;
   padding:14px;border:1px solid var(--bd);border-radius:var(--r2);
@@ -106,7 +100,25 @@ label{color:var(--mut);font-size:.9rem}
 #cardOpt{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 #cardOpt.hide{display:none}
 
-/* deck list */
+/* focus panel */
+.focusbox{
+  display:flex;flex-direction:column;gap:8px;
+  padding:14px;border:1px solid var(--bd);border-radius:var(--r2);
+  background:var(--card2);margin-top:10px;
+}
+.focusbox label{font-size:.85rem}
+.focusbox .hint{color:var(--mut);font-size:.78rem;margin-top:-4px}
+.focusbox textarea{min-height:58px;font-size:.92rem;background:var(--card)}
+
+/* preset chips */
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip-btn{
+  padding:5px 10px;border-radius:999px;font-size:.78rem;
+  border:1px solid var(--bd);background:transparent;color:var(--mut);
+  cursor:pointer;transition:all .15s;
+}
+.chip-btn:hover{color:var(--fg);border-color:var(--bd2);background:var(--card)}
+
 .deckitem{
   display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
   border:1px solid var(--bd);background:var(--card);border-radius:var(--r2);
@@ -124,7 +136,6 @@ label{color:var(--mut);font-size:.9rem}
 }
 .badge.due{background:rgba(124,147,255,.18);border-color:rgba(124,147,255,.4);color:#c6d2ff}
 
-/* study */
 .studyhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .studyhead .title{flex:1;font-size:1.15rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .progline{
@@ -198,14 +209,40 @@ details.sub .toolgrid{padding:4px 10px 10px}
 #summary .big{font-size:2.4rem;font-weight:700;margin:6px 0}
 #summary .lbl{color:var(--mut);font-size:.9rem;margin:0}
 
-/* quiz */
+/* ===== CARD EDITOR ===== */
+#editList{margin-top:6px}
+.editrow{
+  display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:start;
+  border:1px solid var(--bd);border-radius:var(--r);
+  background:var(--card);padding:10px;margin:8px 0;
+  transition:border-color .15s;
+}
+.editrow:focus-within{border-color:var(--acc)}
+.editnum{
+  font-weight:600;color:var(--mut);font-size:.85rem;padding-top:10px;text-align:center;
+}
+.editfields{display:flex;flex-direction:column;gap:6px;min-width:0}
+.editfields textarea{
+  width:100%;font:inherit;font-size:.94rem;color:var(--fg);
+  padding:9px 12px;border-radius:var(--r);border:1px solid var(--bd);
+  background:var(--card2);resize:vertical;min-height:44px;font-family:inherit;
+}
+.editfields textarea:focus{outline:none;border-color:var(--acc)}
+.editfields .lbl{font-size:.72rem;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:-2px}
+.editdel{padding:8px 11px;align-self:start;font-size:.85rem}
+.editempty{
+  text-align:center;color:var(--mut);padding:30px 20px;
+  border:1px dashed var(--bd);border-radius:var(--r2);margin:20px 0;
+}
+.editbar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.editbar button{flex:1;min-width:120px}
+
 #qbox{padding:8px 0}
 #qbox h3{font-size:1.05rem;margin:0 0 16px;line-height:1.5}
 .qopt{display:block;width:100%;text-align:left;margin:8px 0;padding:13px 16px;font-size:.98rem}
 .qopt.ok{border-color:var(--ok);background:rgba(62,207,142,.18)}
 .qopt.no{border-color:var(--bad);background:rgba(255,107,107,.18)}
 
-/* notes */
 #out,#out2{
   background:var(--card);border:1px solid var(--bd);border-radius:var(--r2);
   padding:8px 24px 20px;margin-top:14px;overflow-x:auto;
@@ -226,7 +263,6 @@ details.sub .toolgrid{padding:4px 10px 10px}
 .noteitem .nm{font-weight:600;margin-bottom:2px}
 .noteitem .meta{color:var(--mut);font-size:.82rem}
 
-/* menu */
 details.menu{position:relative}
 details.menu>summary{
   list-style:none;cursor:pointer;padding:8px 11px;border-radius:var(--r);
@@ -245,7 +281,6 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
 .menu-panel button:hover{background:var(--card)}
 .menu-panel label{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-size:.9rem;color:var(--fg)}
 
-/* tts bar */
 .ttsbar{
   display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px;
   border:1px solid var(--bd);border-radius:var(--r);background:var(--card2);
@@ -254,7 +289,7 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
 .ttsbar select{font-size:.85rem;padding:6px 10px}
 .ttsbar input[type=range]{flex:1;min-width:80px;max-width:160px}
 
-button,select,input{touch-action:manipulation}
+button,select,input,textarea{touch-action:manipulation}
 @media (max-width:600px){
   h1{font-size:1.3rem}
   main{padding-top:14px}
@@ -268,9 +303,12 @@ button,select,input{touch-action:manipulation}
   .deckitem .btns button{min-width:0}
   .ratebar{grid-template-columns:repeat(2,1fr)}
   .toolgrid{grid-template-columns:repeat(2,1fr)}
-  #lang,#cardOpt select,.toolbar .field select{width:100%}
+  #lang,#cardOpt select,.toolbar .field select,.toolbar .field input{width:100%}
   .toolbar{flex-direction:column;align-items:stretch}
   .toolbar .field{width:100%}
+  .editrow{grid-template-columns:26px 1fr}
+  .editdel{grid-column:1/-1;width:100%}
+  .editbar button{flex:1 1 100%}
 }
 </style>
 </head>
@@ -292,7 +330,7 @@ button,select,input{touch-action:manipulation}
 
   <div id="status"></div>
 
-  <!-- CREATE -->
+  <!-- ============ CREATE ============ -->
   <div id="createView">
     <div id="drop" tabindex="0">
       <b>Drop your PDF here</b>
@@ -316,6 +354,14 @@ button,select,input{touch-action:manipulation}
           <option value="tf">True / False</option>
         </select>
       </div>
+      <div class="field">
+        <label for="difficulty">Difficulty</label>
+        <select id="difficulty">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate" selected>Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
       <div class="field" id="detailOpt">
         <label for="detail">Detail</label>
         <select id="detail">
@@ -337,9 +383,23 @@ button,select,input{touch-action:manipulation}
         </select>
       </div>
     </div>
+
+    <div class="focusbox">
+      <label for="focus">AI focus (optional) — what should the AI pay attention to or skip?</label>
+      <textarea id="focus" rows="2" placeholder='e.g. "Chapter 3 only", "skip examples and historical context", "emphasize formulas and definitions"'></textarea>
+      <div class="chips" id="focusChips">
+        <button type="button" class="chip-btn" data-fill="Focus only on the main concepts and definitions.">Main concepts</button>
+        <button type="button" class="chip-btn" data-fill="Focus on definitions and key terminology.">Definitions only</button>
+        <button type="button" class="chip-btn" data-fill="Focus on formulas, equations, and how to apply them.">Formulas</button>
+        <button type="button" class="chip-btn" data-fill="Skip the examples, exercises, and worked problems.">Skip examples</button>
+        <button type="button" class="chip-btn" data-fill="Focus on the most important facts likely to appear on an exam.">Exam-critical</button>
+        <button type="button" class="chip-btn" data-fill="Focus on causes, effects, and relationships between ideas.">Cause &amp; effect</button>
+      </div>
+      <div class="hint">Blank = cover the whole document evenly.</div>
+    </div>
   </div>
 
-  <!-- DECKS -->
+  <!-- ============ DECKS ============ -->
   <div id="decksView" class="hide">
     <div class="row tight">
       <button id="mix" class="p">Study all decks</button>
@@ -349,12 +409,12 @@ button,select,input{touch-action:manipulation}
     <div id="deckList"></div>
   </div>
 
-  <!-- NOTES LIBRARY -->
+  <!-- ============ NOTES LIBRARY ============ -->
   <div id="notesLibView" class="hide">
     <div id="notesList"></div>
   </div>
 
-  <!-- STUDY -->
+  <!-- ============ STUDY ============ -->
   <div id="studyView" class="hide">
     <div class="studyhead">
       <button id="backDecks" class="ghost icon" title="Back to decks">←</button>
@@ -363,6 +423,7 @@ button,select,input{touch-action:manipulation}
         <summary title="Deck settings">⚙</summary>
         <div class="menu-panel">
           <button id="renameBtn">Rename deck</button>
+          <button id="openEditor">Edit all cards</button>
           <label>Card color <input type="color" id="cardColor" value="#3d5afe"></label>
           <button id="resetColor">Reset card color</button>
           <button id="resetProgress" class="danger">Reset all progress</button>
@@ -418,7 +479,8 @@ button,select,input{touch-action:manipulation}
     <details class="tools">
       <summary>More tools</summary>
       <div class="toolgrid">
-        <button id="edit">✏️ Edit card</button>
+        <button id="edit">✏️ Quick edit</button>
+        <button id="openEditor2">📝 Edit all cards</button>
         <button id="add">➕ Add card</button>
         <button id="del" class="danger">🗑 Delete card</button>
         <button id="shuffle">🔀 Shuffle</button>
@@ -441,7 +503,23 @@ button,select,input{touch-action:manipulation}
     </details>
   </div>
 
-  <!-- QUIZ -->
+  <!-- ============ CARD EDITOR ============ -->
+  <div id="editView" class="hide">
+    <div class="studyhead">
+      <button id="editBack" class="ghost icon" title="Back">←</button>
+      <div class="title" id="editTitle">Edit cards</div>
+      <button id="editSave" class="p">Save all</button>
+    </div>
+    <p class="sub" id="editHint">Edit any card below, add new ones, or delete the ones you don't want. Nothing saves until you click <b>Save all</b>.</p>
+    <div id="editList"></div>
+    <div class="editbar">
+      <button id="editAdd">+ Add card</button>
+      <button id="editCancel">Cancel</button>
+      <button id="editSave2" class="p">Save all</button>
+    </div>
+  </div>
+
+  <!-- ============ QUIZ ============ -->
   <div id="quizView" class="hide">
     <div class="studyhead">
       <button id="quizBack" class="ghost icon">←</button>
@@ -450,7 +528,7 @@ button,select,input{touch-action:manipulation}
     <div id="qbox"></div>
   </div>
 
-  <!-- SINGLE NOTE -->
+  <!-- ============ SINGLE NOTE ============ -->
   <div id="noteView" class="hide">
     <div class="studyhead">
       <button id="noteBack" class="ghost icon">←</button>
@@ -467,7 +545,7 @@ button,select,input{touch-action:manipulation}
     <div id="out"></div>
   </div>
 
-  <!-- FRESH NOTES -->
+  <!-- ============ FRESH NOTES ============ -->
   <div id="notesView" class="hide">
     <div class="studyhead">
       <button id="again" class="ghost icon">←</button>
@@ -503,6 +581,8 @@ function store(key, val) {
 let decks    = load("fc_decks", []);
 let notesLib = load("fc_notes", []);
 let cur = null, cards = [], idx = 0, flipped = false, notesMd = "", busy = false, session = null;
+/* editor state */
+let editTarget = null, editCards = [], editReturn = "study";
 
 decks.forEach(d => d.cards.forEach(c => { if ("known" in c && !c.srs) delete c.known; }));
 
@@ -565,11 +645,11 @@ applyBg(savedBg);
 })();
 
 /* ========== views ========== */
-const VIEWS = ["create", "decks", "notesLib", "study", "quiz", "notes", "note"];
+const VIEWS = ["create", "decks", "notesLib", "study", "edit", "quiz", "notes", "note"];
 function show(name) {
   VIEWS.forEach(v => $(v + "View").classList.toggle("hide", v !== name));
   $("tabCreate").classList.toggle("on", name === "create" || name === "notes");
-  $("tabDecks").classList.toggle("on", name === "decks" || name === "study" || name === "quiz" || name === "note");
+  $("tabDecks").classList.toggle("on", name === "decks" || name === "study" || name === "edit" || name === "quiz" || name === "note");
   $("tabNotes").classList.toggle("on", name === "notesLib");
   if (name === "decks") renderDecks();
   if (name === "notesLib") renderNotesLib();
@@ -585,12 +665,21 @@ if (matchMedia("(pointer: coarse)").matches) {
   drop.querySelector("b").textContent = "Tap to choose your PDF";
   drop.querySelector("span").textContent = "from your phone files or Google Drive";
 }
-$("mode").onchange = () => {
+function syncMode() {
   const isCards = $("mode").value === "flashcards";
   $("cardOpt").classList.toggle("hide", !isCards);
   $("detailOpt").classList.toggle("hide", isCards);
-};
-$("detailOpt").classList.add("hide");
+}
+$("mode").onchange = syncMode;
+syncMode();
+
+/* focus chips */
+$("focusChips").addEventListener("click", e => {
+  const b = e.target.closest(".chip-btn"); if (!b) return;
+  const ta = $("focus");
+  ta.value = ta.value ? (ta.value.replace(/\s+$/, "") + " " + b.dataset.fill) : b.dataset.fill;
+  ta.focus();
+});
 
 /* ========== decks ========== */
 function renderDecks() {
@@ -622,6 +711,7 @@ function renderDecks() {
       if (cls) b.className = cls; b.onclick = fn; btns.appendChild(b);
     };
     mk(due ? "Study (" + due + ")" : "Study", "p", () => startSession(d, due ? "due" : "all"));
+    mk("Edit", "", () => openEditorFor(d.id));
     mk("Rename", "", () => renameDeck(d.id));
     mk("Delete", "danger", () => {
       if (confirm('Delete "' + d.name + '"?')) {
@@ -789,6 +879,8 @@ $("filterMissed").onclick = () => cur && startSession(cur, "missed");
 $("cardColor").oninput  = () => { if (cur && !cur.virtual) { cur.color = $("cardColor").value; styleCard(); } };
 $("cardColor").onchange = () => store("fc_decks", decks);
 $("resetColor").onclick = () => { if (cur && !cur.virtual) { cur.color = null; store("fc_decks", decks); styleCard(); } };
+
+/* quick single-card edit via prompts */
 $("edit").onclick = () => {
   const c = cards[idx]; if (!c) return;
   const f = prompt("Question:", c.front); if (f === null) return;
@@ -824,6 +916,112 @@ $("mix").onclick = () => {
   cur = { id: "mix", virtual: true, name: "All decks", cards: all, color: null, created: Date.now() };
   startSession(cur, "all");
 };
+
+/* ========== CARD EDITOR ========== */
+function openEditorFromStudy() {
+  if (!cur || cur.virtual) { statusEl.textContent = "Open a single deck to edit its cards."; return; }
+  editTarget = cur;
+  editCards = editTarget.cards.map(c => ({ front: c.front, back: c.back, srs: c.srs }));
+  editReturn = "study";
+  renderEditor();
+  show("edit");
+}
+function openEditorFor(id) {
+  const d = decks.find(x => x.id === id); if (!d) return;
+  editTarget = d;
+  editCards = d.cards.map(c => ({ front: c.front, back: c.back, srs: c.srs }));
+  editReturn = "decks";
+  renderEditor();
+  show("edit");
+}
+$("openEditor").onclick = openEditorFromStudy;
+$("openEditor2").onclick = openEditorFromStudy;
+
+function renderEditor() {
+  $("editTitle").textContent = editTarget ? ("Edit: " + editTarget.name) : "Edit cards";
+  const list = $("editList");
+  list.innerHTML = "";
+  if (!editCards.length) {
+    list.innerHTML = '<div class="editempty">No cards yet. Use <b>+ Add card</b> below to create one.</div>';
+    return;
+  }
+  editCards.forEach((c, i) => {
+    const row = document.createElement("div"); row.className = "editrow";
+    const num = document.createElement("div"); num.className = "editnum"; num.textContent = i + 1;
+    const fields = document.createElement("div"); fields.className = "editfields";
+
+    const fLbl = document.createElement("span"); fLbl.className = "lbl"; fLbl.textContent = "Front / question";
+    const fTA = document.createElement("textarea"); fTA.rows = 2; fTA.placeholder = "Question or term…"; fTA.value = c.front;
+    fTA.oninput = e => { editCards[i].front = e.target.value; };
+
+    const bLbl = document.createElement("span"); bLbl.className = "lbl"; bLbl.textContent = "Back / answer";
+    const bTA = document.createElement("textarea"); bTA.rows = 2; bTA.placeholder = "Answer or definition…"; bTA.value = c.back;
+    bTA.oninput = e => { editCards[i].back = e.target.value; };
+
+    fields.append(fLbl, fTA, bLbl, bTA);
+
+    const del = document.createElement("button");
+    del.className = "editdel danger"; del.type = "button"; del.title = "Delete card"; del.textContent = "✕";
+    del.onclick = () => {
+      if (!confirm("Delete card " + (i + 1) + "?")) return;
+      editCards.splice(i, 1);
+      renderEditor();
+    };
+
+    row.append(num, fields, del);
+    list.appendChild(row);
+  });
+}
+$("editAdd").onclick = () => {
+  editCards.push({ front: "", back: "" });
+  renderEditor();
+  const tas = document.querySelectorAll(".editfront, .editfields textarea");
+  const fronts = document.querySelectorAll(".editfields textarea:first-of-type");
+  // focus the last front field
+  const rows = document.querySelectorAll(".editrow");
+  if (rows.length) {
+    const last = rows[rows.length - 1];
+    const ta = last.querySelector("textarea");
+    if (ta) { ta.focus(); ta.scrollIntoView({ behavior: "smooth", block: "center" }); }
+  }
+};
+function cancelEditor() {
+  if (!editTarget) { show("decks"); return; }
+  // check for unsaved changes
+  const orig = JSON.stringify(editTarget.cards.map(c => ({ f: c.front, b: c.back })));
+  const now  = JSON.stringify(editCards.filter(c => (c.front||"").trim() || (c.back||"").trim())
+    .map(c => ({ f: (c.front||"").trim(), b: (c.back||"").trim() })));
+  if (orig !== now && !confirm("Discard your unsaved changes?")) return;
+  editTarget = null; editCards = [];
+  if (editReturn === "study" && cur && !cur.virtual) { show("study"); }
+  else show("decks");
+}
+$("editBack").onclick = cancelEditor;
+$("editCancel").onclick = cancelEditor;
+function saveEditor() {
+  if (!editTarget) return;
+  const cleaned = editCards
+    .map(c => ({ front: (c.front || "").trim(), back: (c.back || "").trim(), srs: c.srs }))
+    .filter(c => c.front && c.back);
+  if (!cleaned.length) { statusEl.textContent = "Add at least one complete card before saving."; return; }
+  const before = editTarget.cards.length;
+  editTarget.cards = cleaned;
+  const ok = store("fc_decks", decks);
+  $("nDecks").textContent = decks.length;
+  statusEl.textContent = ok ? "Saved " + cleaned.length + " card(s)" +
+    (cleaned.length !== before ? " (" + (cleaned.length - before >= 0 ? "+" : "") + (cleaned.length - before) + ")" : "") + "." : statusEl.textContent;
+  // If we were studying this same deck, restart the session so cards are fresh
+  if (editReturn === "study" && cur && cur.id === editTarget.id && !cur.virtual) {
+    const tgt = editTarget;
+    editTarget = null; editCards = [];
+    startSession(tgt, dueCount(tgt) ? "due" : "all");
+  } else {
+    editTarget = null; editCards = [];
+    renderDecks(); show("decks");
+  }
+}
+$("editSave").onclick = saveEditor;
+$("editSave2").onclick = saveEditor;
 
 /* ========== TTS ========== */
 let voices = [];
@@ -1086,7 +1284,7 @@ $("copy").onclick = async () => {
 };
 $("save").onclick = () => download("study-notes.md", notesMd, "text/markdown");
 
-/* ========== PDF -> AI ========== */
+/* ========== PDF → AI ========== */
 drop.onclick = () => fileInput.click();
 drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } };
 fileInput.onchange = () => fileInput.files[0] && handle(fileInput.files[0]);
@@ -1137,10 +1335,12 @@ async function handle(file) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         text, pages, images, mode,
-        count:  $("count").value,
-        style:  $("style").value,
-        detail: $("detail").value,
-        lang:   $("lang").value
+        count:      $("count").value,
+        style:      $("style").value,
+        detail:     $("detail").value,
+        difficulty: $("difficulty").value,
+        focus:      $("focus").value,
+        lang:       $("lang").value
       })
     });
     const data = await r.json();
@@ -1156,7 +1356,9 @@ async function handle(file) {
       const ok = store("fc_decks", decks);
       $("nDecks").textContent = decks.length;
       startSession(deck, "all");
-      statusEl.textContent = ok ? 'Saved as "' + deck.name + '". Space to flip, 1–4 to rate.' : statusEl.textContent;
+      statusEl.textContent = ok
+        ? 'Saved as "' + deck.name + '". Tip: ⚙ → Edit all cards to tweak them before studying.'
+        : statusEl.textContent;
     } else {
       notesMd = data.notes;
       $("genNoteTitle").textContent = file.name.replace(/\.pdf$/i, "").slice(0, 80) || "Study notes";
