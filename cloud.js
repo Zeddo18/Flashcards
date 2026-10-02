@@ -1,4 +1,4 @@
-/* cloud.js — Supabase auth + deck sync. Exposes window.Cloud. */
+/* cloud.js — Supabase auth + deck & note sync. Exposes window.Cloud. */
 (function () {
   const cfg = { url: window.SUPABASE_URL, key: window.SUPABASE_ANON_KEY };
   let client = null, user = null;
@@ -156,6 +156,60 @@
     };
   }
 
+  /* ---------- notes ---------- */
+  function rowToNote(row) {
+    return {
+      id: row.id,
+      title: row.title,
+      md: row.md,
+      created: new Date(row.created_at).getTime()
+    };
+  }
+  function noteToRow(note) {
+    return {
+      id: note.id,
+      user_id: user.id,
+      title: note.title,
+      md: note.md,
+      created_at: new Date(note.created || Date.now()).toISOString()
+    };
+  }
+
+  async function listMyNotes() {
+    if (!user) return [];
+    const { data, error } = await client
+      .from("notes").select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data || []).map(rowToNote);
+  }
+
+  async function upsertNote(note) {
+    if (!user) return null;
+    const row = noteToRow(note);
+    const { data, error } = await client
+      .from("notes").upsert(row, { onConflict: "id" })
+      .select().single();
+    if (error) throw error;
+    return rowToNote(data);
+  }
+
+  async function deleteNote(id) {
+    if (!user) return;
+    const { error } = await client.from("notes").delete().eq("id", id);
+    if (error) throw error;
+  }
+
+  async function bulkUpsertNotes(noteList) {
+    if (!user || !noteList.length) return [];
+    const rows = noteList.map(noteToRow);
+    const { data, error } = await client
+      .from("notes").upsert(rows, { onConflict: "id" }).select();
+    if (error) throw error;
+    return (data || []).map(rowToNote);
+  }
+
   function makeSlug() {
     const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
     let s = "";
@@ -177,6 +231,7 @@
     signInEmail, verifyOtp, signInGoogle, signOut,
     listMyDecks, upsertDeck, deleteDeck, bulkUpsert,
     publishDeck, unpublishDeck, getPublicDeck,
+    listMyNotes, upsertNote, deleteNote, bulkUpsertNotes,
     uuid
   };
 })();
