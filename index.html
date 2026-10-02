@@ -314,3 +314,1488 @@ button,select,input,textarea{touch-action:manipulation}
 }
 </style>
 </head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <h1>Flashcards</h1>
+      <p class="sub">Turn PDFs, articles, or pasted text into spaced-repetition cards.</p>
+    </div>
+    <div class="topright">
+      <button id="authBtn" class="userchip">
+        <span class="av" id="authAv">?</span>
+        <span class="em" id="authEm">Sign in</span>
+      </button>
+      <div class="bgbox" id="bgbox"><small>Theme</small></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tabCreate">Create</button>
+    <button class="tab" id="tabDecks">Decks (<span id="nDecks">0</span>)</button>
+    <button class="tab" id="tabNotes">Notes (<span id="nNotes">0</span>)</button>
+  </div>
+
+  <div id="status"></div>
+
+  <!-- CREATE -->
+  <div id="createView">
+    <div class="source-tabs" id="sourceTabs">
+      <button class="src-tab on" data-src="pdf" type="button">📄 PDF files</button>
+      <button class="src-tab" data-src="text" type="button">📝 Paste text</button>
+      <button class="src-tab" data-src="url" type="button">🔗 From URL</button>
+    </div>
+
+    <div class="src-panel" id="pdfSrc">
+      <div id="drop" tabindex="0" role="button" aria-label="Drop PDF files here">
+        <span class="drop-icon">📄</span>
+        <b>Drop PDF files here</b>
+        <span>or click to choose — multiple files allowed</span>
+        <input id="file" type="file" accept="application/pdf" multiple class="hide">
+      </div>
+      <div class="filelist" id="fileList"></div>
+    </div>
+
+    <div class="src-panel hide" id="textSrc">
+      <textarea id="rawText" rows="10" placeholder="Paste or type your text here — chapter notes, an article, a transcript, anything goes."></textarea>
+      <div class="textmeta">
+        <span id="textCount">0 characters</span>
+        <button type="button" id="clearText" class="ghost">Clear</button>
+      </div>
+    </div>
+
+    <div class="src-panel hide" id="urlSrc">
+      <div class="url-row">
+        <input id="urlInput" type="url" placeholder="https://en.wikipedia.org/wiki/Photosynthesis">
+        <button id="urlFetch" class="p" type="button">Fetch</button>
+      </div>
+      <div class="hint-line">
+        Paste an article, blog post, Wikipedia page, public Google Doc/Sheet, or a direct PDF link.
+      </div>
+      <div id="urlResult"></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="field">
+        <label for="mode">Make</label>
+        <select id="mode">
+          <option value="flashcards" selected>Flashcards</option>
+          <option value="notes">Study notes</option>
+        </select>
+      </div>
+      <div class="field" id="cardOpt">
+        <label for="count">Cards</label>
+        <select id="count"><option>10</option><option selected>20</option><option>30</option><option>40</option></select>
+        <select id="style">
+          <option value="qa">Q &amp; A</option>
+          <option value="cloze">Fill in the blank</option>
+          <option value="tf">True / False</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="difficulty">Difficulty</label>
+        <select id="difficulty">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate" selected>Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
+      <div class="field" id="detailOpt">
+        <label for="detail">Detail</label>
+        <select id="detail">
+          <option value="concise">Concise</option>
+          <option value="balanced" selected>Balanced</option>
+          <option value="detailed">Detailed</option>
+        </select>
+      </div>
+      <div class="field" id="pagesField">
+        <label for="pFrom">Pages</label>
+        <input id="pFrom" type="number" min="1" placeholder="from" style="width:70px">
+        <input id="pTo" type="number" min="1" placeholder="to" style="width:70px">
+      </div>
+      <div class="field">
+        <label for="lang">Language</label>
+        <select id="lang">
+          <option value="">Same as source</option>
+          <option>English</option><option>Filipino</option><option>Cebuano</option><option>Spanish</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="focusbox">
+      <label for="focus">AI focus (optional) — what should the AI pay attention to or skip?</label>
+      <textarea id="focus" rows="2" placeholder='e.g. "Chapter 3 only", "skip examples", "emphasize formulas"'></textarea>
+      <div class="chips" id="focusChips">
+        <button type="button" class="chip-btn" data-fill="Focus only on the main concepts and definitions.">Main concepts</button>
+        <button type="button" class="chip-btn" data-fill="Focus on definitions and key terminology.">Definitions only</button>
+        <button type="button" class="chip-btn" data-fill="Focus on formulas, equations, and how to apply them.">Formulas</button>
+        <button type="button" class="chip-btn" data-fill="Skip the examples, exercises, and worked problems.">Skip examples</button>
+        <button type="button" class="chip-btn" data-fill="Focus on the most important facts likely to appear on an exam.">Exam-critical</button>
+        <button type="button" class="chip-btn" data-fill="Focus on causes, effects, and relationships between ideas.">Cause &amp; effect</button>
+      </div>
+      <div class="hint">Blank = cover the whole document evenly.</div>
+    </div>
+
+    <div class="row center" style="margin-top:16px">
+      <button id="generateBtn" class="p big" type="button">✨ Generate</button>
+    </div>
+
+    <div id="progress" class="hide">
+      <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-step">
+        <span id="progStep">Starting…</span>
+        <span class="pct" id="progPct">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECKS -->
+  <div id="decksView" class="hide">
+    <div class="row tight">
+      <button id="mix" class="p">Study all decks</button>
+      <button id="exportAll">Export all</button>
+      <button id="importAll">Import</button>
+      <button id="syncNow" class="hide">Sync now</button>
+    </div>
+    <div id="deckList"></div>
+  </div>
+
+  <!-- NOTES LIBRARY -->
+  <div id="notesLibView" class="hide">
+    <div id="notesList"></div>
+  </div>
+
+  <!-- STUDY -->
+  <div id="studyView" class="hide">
+    <div class="studyhead">
+      <button id="backDecks" class="ghost icon" title="Back to decks">←</button>
+      <div class="title" id="deckTitle"></div>
+      <details class="menu">
+        <summary title="Deck settings">⚙</summary>
+        <div class="menu-panel">
+          <button id="renameBtn">Rename deck</button>
+          <button id="openEditor">Edit all cards</button>
+          <button id="publishBtn">Publish publicly</button>
+          <label>Card color <input type="color" id="cardColor" value="#3d5afe"></label>
+          <button id="resetColor">Reset card color</button>
+          <button id="resetProgress" class="danger">Reset all progress</button>
+          <button id="delDeck" class="danger">Delete deck</button>
+        </div>
+      </details>
+    </div>
+    <div class="progline">
+      <span id="cnt"></span>
+      <span id="dueInfo"></span>
+    </div>
+
+    <div id="card">
+      <div id="inner">
+        <div class="face" id="faceF">
+          <span class="tag">Question</span>
+          <button class="spk" data-speak="front" title="Read aloud">🔊</button>
+          <span id="front"></span>
+        </div>
+        <div class="face b" id="faceB">
+          <span class="tag">Answer</span>
+          <button class="spk" data-speak="back" title="Read aloud">🔊</button>
+          <span id="back"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="navrow" id="navRow">
+      <button id="prev" class="icon" title="Previous">◀</button>
+      <button id="flip" class="p big">Show answer</button>
+      <button id="next" class="icon" title="Next">▶</button>
+    </div>
+    <div class="ratebar hide" id="rateBar">
+      <button id="rateAgain" class="rate r0">Again<small id="iv0"></small></button>
+      <button id="rateHard"  class="rate r1">Hard<small  id="iv1"></small></button>
+      <button id="rateGood"  class="rate r2">Good<small  id="iv2"></small></button>
+      <button id="rateEasy"  class="rate r3">Easy<small  id="iv3"></small></button>
+    </div>
+
+    <div id="summary" class="hide"></div>
+
+    <div class="ttsbar">
+      <span style="color:var(--mut)">🔊</span>
+      <label for="voice">Voice</label>
+      <select id="voice" style="flex:1;min-width:120px"><option value="">Default</option></select>
+      <label for="rate">Speed</label>
+      <input id="rate" type="range" min="0.5" max="1.6" step="0.05" value="1">
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+        <input type="checkbox" id="autoSpeak"> Auto-read
+      </label>
+    </div>
+
+    <details class="tools">
+      <summary>More tools</summary>
+      <div class="toolgrid">
+        <button id="edit">✏️ Quick edit</button>
+        <button id="openEditor2">📝 Edit all cards</button>
+        <button id="add">➕ Add card</button>
+        <button id="del" class="danger">🗑 Delete card</button>
+        <button id="shuffle">🔀 Shuffle</button>
+        <button id="filterDue">📅 Due only</button>
+        <button id="filterAll">📚 All cards</button>
+        <button id="filterMissed">🔁 Missed</button>
+        <button id="quiz">❓ Quiz</button>
+        <button id="share">🔗 Share link</button>
+        <details class="sub">
+          <summary>⬇ Export deck</summary>
+          <div class="toolgrid">
+            <button id="csv">CSV</button>
+            <button id="anki">Anki .txt</button>
+            <button id="quizlet">Quizlet .txt</button>
+            <button id="notion">Notion .md</button>
+            <button id="printPdf">Print / PDF</button>
+          </div>
+        </details>
+      </div>
+    </details>
+  </div>
+
+  <!-- CARD EDITOR -->
+  <div id="editView" class="hide">
+    <div class="studyhead">
+      <button id="editBack" class="ghost icon" title="Back">←</button>
+      <div class="title" id="editTitle">Edit cards</div>
+      <button id="editSave" class="p">Save all</button>
+    </div>
+    <p class="sub" id="editHint">Edit any card below, add new ones, or delete the ones you don't want. Nothing saves until you click <b>Save all</b>.</p>
+    <div id="editList"></div>
+    <div class="editbar">
+      <button id="editAdd">+ Add card</button>
+      <button id="editCancel">Cancel</button>
+      <button id="editSave2" class="p">Save all</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quizView" class="hide">
+    <div class="studyhead">
+      <button id="quizBack" class="ghost icon">←</button>
+      <div class="title">Quiz</div>
+    </div>
+    <div id="qbox"></div>
+  </div>
+
+  <!-- SINGLE NOTE -->
+  <div id="noteView" class="hide">
+    <div class="studyhead">
+      <button id="noteBack" class="ghost icon">←</button>
+      <div class="title" id="noteTitle">Study notes</div>
+      <details class="menu">
+        <summary title="Note actions">⚙</summary>
+        <div class="menu-panel">
+          <button id="copyNote">Copy text</button>
+          <button id="downloadNote">Download .md</button>
+          <button id="delNote" class="danger">Delete note</button>
+        </div>
+      </details>
+    </div>
+    <div id="out"></div>
+  </div>
+
+  <!-- FRESH NOTES -->
+  <div id="notesView" class="hide">
+    <div class="studyhead">
+      <button id="again" class="ghost icon">←</button>
+      <div class="title" id="genNoteTitle">Study notes</div>
+      <details class="menu">
+        <summary>⚙</summary>
+        <div class="menu-panel">
+          <button id="copy">Copy text</button>
+          <button id="saveNewNote" class="p">Save to library</button>
+          <button id="save">Download .md</button>
+        </div>
+      </details>
+    </div>
+    <div class="row tight">
+      <button id="saveBtnBig" class="p big">💾 Save to library</button>
+    </div>
+    <div id="out2"></div>
+  </div>
+</main>
+
+<!-- AUTH MODAL -->
+<div id="authModal" class="modal hide">
+  <div class="modal-card">
+    <button class="modal-x" id="authClose" type="button">✕</button>
+    <h2>Sign in</h2>
+    <p class="sub">Save your decks to the cloud and sync across devices.</p>
+    <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
+    <button id="authEmailBtn" class="p big" type="button">Send magic link</button>
+    <div class="auth-divider">or</div>
+    <button id="authGoogleBtn" class="big" type="button">Continue with Google</button>
+    <p id="authMsg"></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/supabase-config.js"></script>
+<script src="/cloud.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const statusEl = $("status"), drop = $("drop"), fileInput = $("file");
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+/* ========== per-user storage ========== */
+let user = null;
+function storageKey(base) {
+  if (!user || !user.id) return base;
+  return base + "::" + user.id;
+}
+function load(key, fb) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fb; } catch { return fb; } }
+function store(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+  catch { statusEl.textContent = "⚠ Storage is full or blocked."; return false; }
+}
+function loadDecks()   { return load(storageKey("fc_decks"), []); }
+function loadNotes()   { return load(storageKey("fc_notes"), []); }
+function saveDecks()   { return store(storageKey("fc_decks"), decks); }
+function saveNotes()   { return store(storageKey("fc_notes"), notesLib); }
+
+let decks    = loadDecks();
+let notesLib = loadNotes();
+let cur = null, cards = [], idx = 0, flipped = false, notesMd = "", busy = false, session = null;
+let editTarget = null, editCards = [], editReturn = "study";
+let sourceMode = "pdf";
+let pdfFiles = [];
+let urlData = null;
+let cloudReady = false;
+
+(function migrateIds() {
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let changed = false;
+  decks.forEach(d => { if (!uuidRe.test(d.id)) { d.id = Cloud.uuid(); changed = true; } });
+  if (changed) saveDecks();
+})();
+
+/* ========== SRS ========== */
+const DAY = 86400000;
+function nextSrs(srs, rating) {
+  let { interval = 0, ease = 2.5, reps = 0, lapses = 0 } = srs || {};
+  if (rating === 0) { lapses++; ease = Math.max(1.3, ease - 0.25); interval = 0; }
+  else if (rating === 1) { interval = interval < 1 ? 0.5 : interval * 1.2; ease = Math.max(1.3, ease - 0.15); }
+  else if (rating === 2) { interval = reps === 0 ? 1 : interval < 1 ? 2 : interval * ease; }
+  else { interval = reps === 0 ? 3 : interval * ease * 1.3; ease = Math.min(3.0, ease + 0.15); }
+  reps++;
+  const dueMs = Date.now() + (interval < 1 ? 10 * 60000 : Math.round(interval * DAY));
+  return { interval, ease, reps, lapses, due: dueMs, last: Date.now() };
+}
+function previewInterval(srs, rating) {
+  const n = nextSrs(srs, rating);
+  if (n.interval < 1) return "10m";
+  if (n.interval < 30) return Math.round(n.interval) + "d";
+  if (n.interval < 365) return Math.round(n.interval / 30) + "mo";
+  return (n.interval / 365).toFixed(1) + "y";
+}
+const isDue = c => !c.srs || !c.srs.due || c.srs.due <= Date.now();
+const isLearned = c => c.srs && c.srs.interval >= 21;
+function dueCount(deck) { return deck.cards.filter(isDue).length; }
+
+/* ========== theme ========== */
+function isDark(hex) {
+  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55;
+}
+function applyBg(hex) {
+  const s = document.documentElement.style, d = isDark(hex);
+  s.setProperty("--bg", hex);
+  s.setProperty("--fg", d ? "#f2f2f2" : "#1f1d1a");
+  s.setProperty("--mut", d ? "#b5b5b5" : "#5f5b54");
+  s.setProperty("--card", d ? "rgba(255,255,255,.08)" : "rgba(255,255,255,.7)");
+  s.setProperty("--card2", d ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.5)");
+  s.setProperty("--bd", d ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.13)");
+  s.setProperty("--bd2", d ? "rgba(255,255,255,.28)" : "rgba(0,0,0,.24)");
+  s.setProperty("--back", d ? "rgba(255,255,255,.16)" : "rgba(61,90,254,.10)");
+  s.setProperty("--acc", d ? "#7c93ff" : "#3d5afe");
+}
+const presets = ["#15171c", "#faf8f4", "#1e3a5f", "#2d4a3e", "#4a2c5a", "#7a3b3b", "#fff4d6", "#dff3ff"];
+const savedBg = load("fc_bg", null) || (matchMedia("(prefers-color-scheme: light)").matches ? "#faf8f4" : "#15171c");
+applyBg(savedBg);
+(function buildBgPicker() {
+  const box = $("bgbox");
+  presets.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "sw"; b.style.background = c; b.title = c; b.type = "button";
+    b.onclick = () => { applyBg(c); store("fc_bg", c); bgInput.value = c; };
+    box.appendChild(b);
+  });
+  const bgInput = document.createElement("input");
+  bgInput.type = "color"; bgInput.value = savedBg; bgInput.title = "Custom background";
+  bgInput.oninput = () => applyBg(bgInput.value);
+  bgInput.onchange = () => store("fc_bg", bgInput.value);
+  box.appendChild(bgInput);
+})();
+
+/* ========== views ========== */
+const VIEWS = ["create", "decks", "notesLib", "study", "edit", "quiz", "notes", "note"];
+function show(name) {
+  VIEWS.forEach(v => $(v + "View").classList.toggle("hide", v !== name));
+  $("tabCreate").classList.toggle("on", name === "create" || name === "notes");
+  $("tabDecks").classList.toggle("on", name === "decks" || name === "study" || name === "edit" || name === "quiz" || name === "note");
+  $("tabNotes").classList.toggle("on", name === "notesLib");
+  if (name === "decks") renderDecks();
+  if (name === "notesLib") renderNotesLib();
+}
+$("tabCreate").onclick = () => { statusEl.textContent = ""; show("create"); };
+$("tabDecks").onclick  = () => { statusEl.textContent = ""; show("decks"); };
+$("tabNotes").onclick  = () => { statusEl.textContent = ""; show("notesLib"); };
+$("backDecks").onclick = () => show("decks");
+$("quizBack").onclick  = () => show("study");
+$("noteBack").onclick  = () => show("notesLib");
+$("again").onclick     = () => { statusEl.textContent = ""; show("create"); };
+if (matchMedia("(pointer: coarse)").matches) {
+  const b = drop.querySelector("b"), s = drop.querySelector("span");
+  if (b) b.textContent = "Tap to choose PDF files";
+  if (s) s.textContent = "multiple allowed — from Files or Google Drive";
+}
+function syncMode() {
+  const isCards = $("mode").value === "flashcards";
+  $("cardOpt").classList.toggle("hide", !isCards);
+  $("detailOpt").classList.toggle("hide", isCards);
+}
+$("mode").onchange = syncMode;
+syncMode();
+$("focusChips").addEventListener("click", e => {
+  const b = e.target.closest(".chip-btn"); if (!b) return;
+  const ta = $("focus");
+  ta.value = ta.value ? (ta.value.replace(/\s+$/, "") + " " + b.dataset.fill) : b.dataset.fill;
+  ta.focus();
+});
+
+/* ========== auth UI ========== */
+function renderAuth() {
+  const chip = $("authBtn"), av = $("authAv"), em = $("authEm");
+  if (!Cloud.isConfigured()) { chip.classList.remove("signed"); av.textContent = "☁"; em.textContent = "Cloud off"; return; }
+  if (user) {
+    chip.classList.add("signed");
+    av.textContent = (user.email || "?").trim()[0].toUpperCase();
+    em.textContent = user.email.length > 22 ? user.email.slice(0, 20) + "…" : user.email;
+  } else {
+    chip.classList.remove("signed");
+    av.textContent = "?";
+    em.textContent = "Sign in";
+  }
+}
+function openAuth() {
+  if (!Cloud.isConfigured()) { statusEl.textContent = "Cloud is not configured — fill in supabase-config.js."; return; }
+  if (user) {
+    if (confirm("Signed in as " + user.email + ".\n\nClick OK to sign out.")) {
+      Cloud.signOut().then(() => { statusEl.textContent = "Signed out."; });
+    }
+    return;
+  }
+  $("authMsg").textContent = ""; $("authMsg").className = "";
+  $("authModal").classList.remove("hide");
+  setTimeout(() => $("authEmail").focus(), 50);
+}
+$("authBtn").onclick = openAuth;
+$("authClose").onclick = () => $("authModal").classList.add("hide");
+$("authModal").onclick = e => { if (e.target.id === "authModal") $("authModal").classList.add("hide"); };
+$("authEmailBtn").onclick = async () => {
+  const email = $("authEmail").value.trim();
+  if (!email) { $("authMsg").textContent = "Enter your email."; $("authMsg").className = "err"; return; }
+  $("authEmailBtn").disabled = true;
+  $("authMsg").textContent = "Sending…"; $("authMsg").className = "";
+  try {
+    const { error } = await Cloud.signInEmail(email);
+    if (error) throw error;
+    $("authMsg").textContent = "Check your inbox — we sent you a magic link.";
+    $("authMsg").className = "ok";
+  } catch (e) {
+    $("authMsg").textContent = e.message || "Could not send link.";
+    $("authMsg").className = "err";
+  }
+  $("authEmailBtn").disabled = false;
+};
+$("authGoogleBtn").onclick = async () => {
+  try { await Cloud.signInGoogle(); }
+  catch (e) { $("authMsg").textContent = e.message; $("authMsg").className = "err"; }
+};
+$("authEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("authEmailBtn").click(); });
+
+/* ========== cloud sync (per-user, migration on first login) ========== */
+async function pullAndMerge() {
+  if (!user || !cloudReady) return;
+  statusEl.textContent = "Syncing with cloud…";
+  try {
+    const cloud = await Cloud.listMyDecks();
+    const byId = new Map(cloud.map(d => [d.id, d]));
+    const localOnly = [];
+    decks.forEach(d => { if (!byId.has(d.id)) localOnly.push(d); else byId.set(d.id, d); });
+    if (localOnly.length) {
+      try { await Cloud.bulkUpsert(localOnly); } catch (e) { console.warn("bulk upsert failed", e); }
+    }
+    const merged = [];
+    byId.forEach(d => merged.push(d));
+    merged.sort((a, b) => (b.created || 0) - (a.created || 0));
+    decks = merged;
+    saveDecks();
+    $("nDecks").textContent = decks.length;
+    if (cur) { const still = decks.find(d => d.id === cur.id); if (still) cur = still; }
+    renderDecks();
+    statusEl.textContent = "Synced. " + cloud.length + " cloud deck(s), " + localOnly.length + " pushed.";
+  } catch (e) { statusEl.textContent = "Cloud sync failed: " + e.message; }
+}
+Cloud.onAuth(u => {
+  const wasUserId = user ? user.id : null;
+  user = u;
+  cloudReady = Cloud.isConfigured();
+  decks = loadDecks();
+  notesLib = loadNotes();
+  $("nDecks").textContent = decks.length;
+  $("nNotes").textContent = notesLib.length;
+  renderAuth();
+  $("syncNow").classList.toggle("hide", !user);
+  renderDecks();
+  renderNotesLib();
+  if (user && user.id !== wasUserId) {
+    pullAndMerge();
+    $("authModal").classList.add("hide");
+    statusEl.textContent = "Signed in as " + user.email;
+  } else if (!user && wasUserId) {
+    statusEl.textContent = "Signed out. Working offline.";
+  }
+});
+$("syncNow").onclick = pullAndMerge;
+async function pushDeck(deck) {
+  if (!user || !cloudReady) return;
+  try { await Cloud.upsertDeck(deck); } catch (e) { console.warn("push failed", e); }
+}
+async function pushDelete(id) {
+  if (!user || !cloudReady) return;
+  try { await Cloud.deleteDeck(id); } catch (e) { console.warn("delete failed", e); }
+}
+
+/* ========== source tabs ========== */
+function setSource(mode) {
+  sourceMode = mode;
+  document.querySelectorAll(".src-tab").forEach(b => b.classList.toggle("on", b.dataset.src === mode));
+  $("pdfSrc").classList.toggle("hide", mode !== "pdf");
+  $("textSrc").classList.toggle("hide", mode !== "text");
+  $("urlSrc").classList.toggle("hide", mode !== "url");
+  $("pagesField").classList.toggle("hide", mode !== "pdf");
+  statusEl.textContent = "";
+}
+document.querySelectorAll(".src-tab").forEach(b => { b.onclick = () => setSource(b.dataset.src); });
+
+/* ========== multi-file drop ========== */
+drop.onclick = () => fileInput.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } };
+fileInput.onchange = () => { addFiles([...fileInput.files]); fileInput.value = ""; };
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => {
+  e.preventDefault();
+  if (t === "dragleave" && drop.contains(e.relatedTarget)) return;
+  drop.classList.remove("over");
+}));
+drop.addEventListener("drop", e => {
+  const files = [...(e.dataTransfer.files || [])];
+  if (files.length) addFiles(files);
+});
+function addFiles(list) {
+  const pdfs = list.filter(f => f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf");
+  if (!pdfs.length) { statusEl.textContent = "Only PDF files are supported here."; return; }
+  pdfs.forEach(f => pdfFiles.push({ file: f, name: f.name, size: f.size, status: "queued", text: "", images: [], pages: 0, pages_read: 0, error: "" }));
+  renderFileList();
+  statusEl.textContent = pdfFiles.length + " file(s) ready. Click Generate when you're ready.";
+}
+function fmtSize(b) {
+  if (b < 1024) return b + " B";
+  if (b < 1024*1024) return (b/1024).toFixed(0) + " KB";
+  return (b/1024/1024).toFixed(1) + " MB";
+}
+function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function renderFileList() {
+  const box = $("fileList");
+  box.innerHTML = "";
+  pdfFiles.forEach((entry, i) => {
+    const row = document.createElement("div");
+    row.className = "filerow " + (entry.status === "reading" ? "reading"
+      : entry.status === "ready" ? "ready"
+      : entry.status === "error" ? "error" : "");
+    const stat = document.createElement("span");
+    stat.className = "fstat" + (entry.status === "reading" ? " spin" : "");
+    stat.textContent = entry.status === "queued" ? (i + 1) : entry.status === "reading" ? "" : entry.status === "ready" ? "✓" : entry.status === "error" ? "!" : "•";
+    const body = document.createElement("div");
+    body.className = "fbody";
+    const nm = document.createElement("div"); nm.className = "fname"; nm.textContent = entry.name;
+    const meta = document.createElement("div"); meta.className = "fmeta";
+    if (entry.status === "queued") meta.textContent = fmtSize(entry.size) + " — waiting";
+    else if (entry.status === "reading") meta.textContent = entry.pages ? ("Reading page " + entry.pages_read + " of " + entry.pages + "…") : "Opening…";
+    else if (entry.status === "ready") meta.textContent = entry.pages + " page" + (entry.pages === 1 ? "" : "s") + " · " + entry.text.length.toLocaleString() + " chars" + (entry.images.length ? " · " + entry.images.length + " page image(s)" : "");
+    else if (entry.status === "error") meta.textContent = entry.error || "Could not read.";
+    body.append(nm, meta);
+    const del = document.createElement("button");
+    del.className = "fdel"; del.type = "button"; del.textContent = "✕"; del.title = "Remove";
+    del.onclick = () => { pdfFiles.splice(i, 1); renderFileList(); };
+    row.append(stat, body, del);
+    box.appendChild(row);
+  });
+  if (pdfFiles.length > 1) {
+    const actions = document.createElement("div");
+    actions.className = "filelist-actions";
+    const clear = document.createElement("button");
+    clear.type = "button"; clear.className = "ghost"; clear.textContent = "Clear all";
+    clear.onclick = () => { pdfFiles = []; renderFileList(); };
+    actions.appendChild(clear);
+    box.appendChild(actions);
+  }
+}
+
+/* ========== text ========== */
+$("rawText").oninput = () => {
+  const n = $("rawText").value.length;
+  $("textCount").textContent = n.toLocaleString() + " character" + (n === 1 ? "" : "s");
+};
+$("clearText").onclick = () => { $("rawText").value = ""; $("rawText").oninput(); $("rawText").focus(); };
+
+/* ========== url ========== */
+$("urlFetch").onclick = async () => {
+  const url = $("urlInput").value.trim();
+  if (!url) { $("urlInput").focus(); return; }
+  const out = $("urlResult");
+  $("urlFetch").disabled = true;
+  out.innerHTML = '<div class="load">Fetching the page…</div>';
+  urlData = null;
+  try {
+    const r = await fetch("/api/fetch-url", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+    if (data.kind === "pdf") {
+      urlData = { kind: "pdf", data: data.data, name: data.name || "downloaded.pdf" };
+      out.innerHTML = '<div class="ok">✅ Fetched PDF: <b>' + escHtml(urlData.name) + '</b></div>';
+    } else {
+      urlData = { kind: "text", text: data.text, title: data.title || "Imported page" };
+      out.innerHTML = '<div class="ok">✅ Fetched <b>' + escHtml(urlData.title) + '</b> — ' + data.text.length.toLocaleString() + ' characters</div>';
+    }
+  } catch (e) {
+    urlData = null;
+    out.innerHTML = '<div class="err">❌ ' + escHtml(e.message) + '</div>';
+  } finally { $("urlFetch").disabled = false; }
+};
+$("urlInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("urlFetch").click(); } });
+
+/* ========== progress ========== */
+let progAiTimer = null;
+function startProgress() { $("progress").classList.remove("hide", "done", "error", "ai"); setProgress(0, "Starting…"); }
+function setProgress(pct, label) {
+  $("progFill").style.width = Math.max(0, Math.min(100, pct)) + "%";
+  $("progPct").textContent = Math.round(Math.max(0, Math.min(100, pct))) + "%";
+  if (label) $("progStep").textContent = label;
+}
+function startAiPhase() {
+  $("progress").classList.add("ai");
+  const start = Date.now(), est = 25000;
+  const tick = () => {
+    const t = Math.min(1, (Date.now() - start) / est);
+    setProgress(50 + t * 40, t < 0.4 ? "AI is reading the content…" : t < 0.75 ? "Generating…" : "Almost done…");
+    if (t < 1) progAiTimer = setTimeout(tick, 250);
+  };
+  clearTimeout(progAiTimer); tick();
+}
+function finishProgress(msg, isError) {
+  clearTimeout(progAiTimer);
+  $("progress").classList.remove("ai");
+  $("progress").classList.add(isError ? "error" : "done");
+  setProgress(100, msg || "Done!");
+}
+function hideProgressLater() { setTimeout(() => { $("progress").classList.add("hide"); }, 1200); }
+
+/* ========== PDF extract ========== */
+async function extractText(source, from, to, onProgress) {
+  const pdf = await pdfjsLib.getDocument({ data: await source.arrayBuffer() }).promise;
+  const a = Math.max(1, from || 1), b = Math.min(pdf.numPages, to || pdf.numPages);
+  if (onProgress) onProgress(0, pdf.numPages);
+  let text = "";
+  for (let i = a; i <= b; i++) {
+    const page = await pdf.getPage(i);
+    const c = await page.getTextContent();
+    text += c.items.map(x => x.str).join(" ") + "\n\n";
+    if (onProgress) onProgress(i - a + 1, b - a + 1);
+    if (text.length > 80000) break;
+  }
+  const out = { text: text.slice(0, 80000), pages: Math.max(1, b - a + 1), images: [] };
+  if (text.trim().length < 50) {
+    for (let i = a; i <= Math.min(b, a + 7); i++) {
+      try {
+        const page = await pdf.getPage(i);
+        const w = page.getViewport({ scale: 1 }).width;
+        const v = page.getViewport({ scale: Math.min(1.5, 1000 / w) });
+        const cv = document.createElement("canvas");
+        cv.width = v.width; cv.height = v.height;
+        await page.render({ canvasContext: cv.getContext("2d"), viewport: v }).promise;
+        out.images.push(cv.toDataURL("image/jpeg", 0.6).split(",")[1]);
+      } catch {}
+    }
+  }
+  return out;
+}
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+function fileFromB64(b64, name) {
+  const bytes = b64ToBytes(b64);
+  return { name, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
+}
+async function extractAllPdfs(from, to) {
+  for (let i = 0; i < pdfFiles.length; i++) {
+    const entry = pdfFiles[i];
+    if (entry.status === "ready" && entry.text) continue;
+    entry.status = "reading"; entry.pages_read = 0; renderFileList();
+    try {
+      const { text, pages, images } = await extractText(entry.file, from, to, (read, total) => {
+        entry.pages_read = read; entry.pages = total; renderFileList();
+        const done = pdfFiles.filter(f => f.status === "ready").length;
+        const pct = 3 + ((done + read / Math.max(1, total)) / pdfFiles.length) * 42;
+        setProgress(pct, `Reading ${entry.name} — page ${read} of ${total}`);
+      });
+      if (text.trim().length < 50 && !images.length) { entry.status = "error"; entry.error = "No readable text found."; }
+      else { entry.status = "ready"; entry.text = text; entry.pages = pages; entry.images = images; }
+    } catch (e) { entry.status = "error"; entry.error = e.message || "Failed to read."; }
+    renderFileList();
+  }
+}
+
+/* ========== generate ========== */
+function deckNameFrom(files, urlTitle) {
+  if (files.length === 1) return files[0].name.replace(/\.pdf$/i, "").slice(0, 80);
+  if (files.length > 1) return (files[0].name.replace(/\.pdf$/i, "") + " + " + (files.length - 1) + " more").slice(0, 80);
+  if (urlTitle) return urlTitle.slice(0, 80);
+  return "Pasted text";
+}
+$("generateBtn").onclick = generate;
+async function generate() {
+  if (busy) return;
+  let text = "", images = [], pages = 1, deckName = "";
+
+  if (sourceMode === "pdf") {
+    if (!pdfFiles.length) { statusEl.textContent = "Add at least one PDF file."; return; }
+    busy = true; $("generateBtn").disabled = true;
+    startProgress(); setProgress(2, "Preparing files…");
+    await extractAllPdfs(parseInt($("pFrom").value) || 1, parseInt($("pTo").value) || 0);
+    const ready = pdfFiles.filter(f => f.status === "ready");
+    const failed = pdfFiles.filter(f => f.status === "error");
+    if (!ready.length) {
+      finishProgress("No readable content in any file.", true);
+      statusEl.textContent = "Every file failed to produce text. " + (failed[0] ? failed[0].error : "");
+      busy = false; $("generateBtn").disabled = false; return;
+    }
+    text = ready.map(f => f.text).join("\n\n");
+    images = ready.flatMap(f => f.images);
+    pages = ready.reduce((s, f) => s + (f.pages || 0), 0);
+    deckName = deckNameFrom(pdfFiles, null);
+    if (failed.length) statusEl.textContent = "Skipping " + failed.length + " unreadable file(s).";
+  } else if (sourceMode === "text") {
+    text = $("rawText").value.trim();
+    if (text.length < 50) { statusEl.textContent = "Paste at least 50 characters of text."; return; }
+    busy = true; $("generateBtn").disabled = true;
+    startProgress(); setProgress(15, "Preparing text…");
+    deckName = "Pasted text"; pages = 1;
+  } else if (sourceMode === "url") {
+    if (!urlData) { statusEl.textContent = "Click Fetch first, or paste a different URL."; return; }
+    busy = true; $("generateBtn").disabled = true;
+    startProgress();
+    if (urlData.kind === "text") {
+      text = urlData.text; pages = 1; deckName = urlData.title || "From URL";
+      setProgress(20, "Using fetched page…");
+    } else {
+      setProgress(10, "Opening the PDF…");
+      const fakeFile = fileFromB64(urlData.data, urlData.name);
+      try {
+        const { text: t, pages: p, images: im } = await extractText(fakeFile, 1, 0, (read, total) => {
+          const pct = 10 + (read / Math.max(1, total)) * 35;
+          setProgress(pct, `Reading page ${read} of ${total}…`);
+        });
+        if (t.trim().length < 50 && !im.length) {
+          finishProgress("No readable content in that PDF.", true);
+          statusEl.textContent = "That PDF had no extractable text (might be scanned images only).";
+          busy = false; $("generateBtn").disabled = false; return;
+        }
+        text = t; pages = p; images = im;
+        deckName = (urlData.name || "PDF").replace(/\.pdf$/i, "");
+      } catch (e) {
+        finishProgress("Couldn't read the PDF.", true);
+        statusEl.textContent = "Error: " + e.message;
+        busy = false; $("generateBtn").disabled = false; return;
+      }
+    }
+  }
+
+  const mode = $("mode").value;
+  const body = {
+    text: text.slice(0, 80000), pages, images: images.slice(0, 8), mode,
+    count: $("count").value, style: $("style").value, detail: $("detail").value,
+    difficulty: $("difficulty").value, focus: $("focus").value, lang: $("lang").value
+  };
+
+  setProgress(50, "Sending to the AI…");
+  startAiPhase();
+  statusEl.textContent = "AI is working (this can take up to a minute)…";
+
+  try {
+    const r = await fetch("/api/notes", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || "Request failed.");
+    finishProgress("Done!");
+    hideProgressLater();
+
+    if (mode === "flashcards") {
+      const deck = {
+        id: Cloud.uuid(), name: deckName,
+        cards: data.cards.map(c => ({ front: c.front, back: c.back })),
+        color: null, created: Date.now(), isPublic: false, slug: null
+      };
+      decks.unshift(deck);
+      saveDecks();
+      $("nDecks").textContent = decks.length;
+      pushDeck(deck);
+      pdfFiles = []; renderFileList();
+      $("rawText").value = ""; $("rawText").oninput();
+      urlData = null; $("urlInput").value = ""; $("urlResult").innerHTML = "";
+      startSession(deck, "all");
+      statusEl.textContent = 'Saved as "' + deck.name + '".' + (user ? " Synced to your account." : " Sign in to sync across devices.");
+    } else {
+      notesMd = data.notes;
+      $("genNoteTitle").textContent = deckName || "Study notes";
+      $("out2").innerHTML = renderMd(notesMd);
+      pdfFiles = []; renderFileList();
+      $("rawText").value = ""; $("rawText").oninput();
+      urlData = null; $("urlInput").value = ""; $("urlResult").innerHTML = "";
+      show("notes");
+      statusEl.textContent = "Done — use Save to library to keep this.";
+    }
+  } catch (e) {
+    finishProgress("Error", true);
+    statusEl.textContent = "Something went wrong: " + e.message;
+  } finally {
+    busy = false; $("generateBtn").disabled = false;
+  }
+}
+
+/* ========== decks list ========== */
+function renderDecks() {
+  $("nDecks").textContent = decks.length;
+  const list = $("deckList");
+  list.innerHTML = "";
+  if (!decks.length) {
+    list.innerHTML = '<p class="sub" style="margin-top:20px">' +
+      (user ? "No decks on your account yet. Create one from a PDF." : "No saved decks yet. Create flashcards from a PDF — then sign in to save them to your account.") +
+      '</p>';
+    return;
+  }
+  decks.forEach(d => {
+    const el = document.createElement("div"); el.className = "deckitem";
+    const info = document.createElement("div");
+    const nm = document.createElement("div"); nm.className = "nm";
+    const chip = document.createElement("span"); chip.className = "chip"; chip.style.background = d.color || "transparent";
+    nm.append(chip, document.createTextNode(d.name));
+    if (d.isPublic) { const pb = document.createElement("span"); pb.className = "badge pub"; pb.textContent = "🔗 public"; nm.appendChild(pb); }
+    const meta = document.createElement("div"); meta.className = "meta";
+    const due = dueCount(d);
+    const learned = d.cards.filter(isLearned).length;
+    meta.textContent = d.cards.length + " cards · " + learned + " learned · " + new Date(d.created).toLocaleDateString();
+    if (due) { const b = document.createElement("span"); b.className = "badge due"; b.textContent = due + " due"; meta.append(" · ", b); }
+    if (user) { const cb = document.createElement("span"); cb.className = "badge cloud"; cb.textContent = "☁ yours"; meta.append(" · ", cb); }
+    else { const gb = document.createElement("span"); gb.className = "badge guest"; gb.textContent = "guest"; meta.append(" · ", gb); }
+    info.append(nm, meta);
+    const btns = document.createElement("div"); btns.className = "btns";
+    const mk = (label, cls, fn) => {
+      const b = document.createElement("button"); b.textContent = label;
+      if (cls) b.className = cls; b.onclick = fn; btns.appendChild(b);
+    };
+    mk(due ? "Study (" + due + ")" : "Study", "p", () => startSession(d, due ? "due" : "all"));
+    mk("Edit", "", () => openEditorFor(d.id));
+    mk("Rename", "", () => renameDeck(d.id));
+    mk("Delete", "danger", () => {
+      if (confirm('Delete "' + d.name + '"?')) {
+        decks = decks.filter(x => x.id !== d.id);
+        saveDecks(); pushDelete(d.id); renderDecks();
+      }
+    });
+    el.append(info, btns);
+    list.appendChild(el);
+  });
+}
+function renameDeck(id) {
+  const d = decks.find(x => x.id === id); if (!d) return;
+  const name = prompt("New name:", d.name);
+  if (name && name.trim()) {
+    d.name = name.trim().slice(0, 80);
+    saveDecks(); pushDeck(d);
+    if (cur && cur.id === id) $("deckTitle").textContent = d.name;
+    renderDecks();
+  }
+}
+$("renameBtn").onclick = () => cur && !cur.virtual && renameDeck(cur.id);
+$("delDeck").onclick = () => {
+  if (!cur || cur.virtual) return;
+  if (!confirm('Delete "' + cur.name + '"?')) return;
+  decks = decks.filter(d => d.id !== cur.id);
+  saveDecks(); pushDelete(cur.id); show("decks");
+};
+
+/* ========== publish ========== */
+$("publishBtn").onclick = async () => {
+  if (!cur || cur.virtual) return;
+  if (!user) { statusEl.textContent = "Sign in first to publish a deck."; openAuth(); return; }
+  try {
+    if (cur.isPublic) {
+      if (!confirm('Unpublish "' + cur.name + '"? The public link will stop working.')) return;
+      const updated = await Cloud.unpublishDeck(cur.id);
+      Object.assign(cur, updated);
+      const i = decks.findIndex(d => d.id === cur.id);
+      if (i >= 0) decks[i] = cur;
+      saveDecks(); renderDecks();
+      statusEl.textContent = "Deck is now private.";
+    } else {
+      const updated = await Cloud.publishDeck(cur.id);
+      Object.assign(cur, updated);
+      const i = decks.findIndex(d => d.id === cur.id);
+      if (i >= 0) decks[i] = cur;
+      saveDecks(); renderDecks();
+      const url = location.origin + location.pathname + "?d=" + updated.slug;
+      try { await navigator.clipboard.writeText(url); statusEl.textContent = "Published! Public link copied."; }
+      catch { statusEl.textContent = "Published! Share this link: " + url; }
+    }
+    $("publishBtn").textContent = cur.isPublic ? "Unpublish deck" : "Publish publicly";
+  } catch (e) { statusEl.textContent = "Publish failed: " + e.message; }
+};
+
+/* ========== study session ========== */
+function styleCard() {
+  const col = cur && cur.color, f = $("faceF"), b = $("faceB");
+  if (!col) { [f, b].forEach(x => { x.style.background = ""; x.style.color = ""; }); return; }
+  const txt = isDark(col) ? "#f5f5f5" : "#1f1d1a";
+  f.style.background = col; f.style.color = txt;
+  b.style.background = "linear-gradient(rgba(0,0,0,.14),rgba(0,0,0,.14)), " + col;
+  b.style.color = txt;
+}
+function startSession(deck, filter) {
+  cur = deck;
+  let pool;
+  if (filter === "due") pool = deck.cards.filter(isDue);
+  else if (filter === "missed") pool = deck.cards.filter(c => c.srs && c.srs.lapses > 0);
+  else pool = deck.cards;
+  if (!pool.length) pool = deck.cards;
+  if (!pool.length) { statusEl.textContent = "This deck has no cards."; return; }
+  cards = pool.slice(); idx = 0; flipped = false;
+  session = { total: cards.length, done: 0, started: Date.now(), counts: [0,0,0,0] };
+  $("card").classList.remove("flip");
+  $("deckTitle").textContent = cur.name;
+  $("cardColor").value = cur.color || "#3d5afe";
+  $("publishBtn").textContent = cur.isPublic ? "Unpublish deck" : "Publish publicly";
+  $("summary").classList.add("hide");
+  $("card").classList.remove("hide");
+  $("navRow").classList.remove("hide");
+  styleCard(); showCard(); show("study");
+}
+function openDeck(id) { const d = decks.find(x => x.id === id); if (!d) return; startSession(d, dueCount(d) ? "due" : "all"); }
+function showCard() {
+  const c = cards[idx]; if (!c) return;
+  $("front").textContent = c.front;
+  $("back").textContent = c.back;
+  const learned = cur.cards.filter(isLearned).length;
+  const dueNow = cur.virtual ? "—" : dueCount(cur) + " due";
+  $("cnt").textContent = "Card " + (idx + 1) + " of " + cards.length + " · " + learned + "/" + cur.cards.length + " learned";
+  $("dueInfo").textContent = dueNow;
+  $("navRow").classList.remove("hide");
+  $("rateBar").classList.add("hide");
+  $("flip").textContent = "Show answer";
+  flipped = false;
+  $("card").classList.remove("flip");
+  $("iv0").textContent = previewInterval(c.srs, 0);
+  $("iv1").textContent = previewInterval(c.srs, 1);
+  $("iv2").textContent = previewInterval(c.srs, 2);
+  $("iv3").textContent = previewInterval(c.srs, 3);
+}
+function flipCard() {
+  if (flipped) return;
+  flipped = true;
+  $("card").classList.add("flip");
+  $("flip").textContent = "Show question";
+  $("rateBar").classList.remove("hide");
+  if ($("autoSpeak").checked) speak(cards[idx].back);
+}
+$("flip").onclick = () => {
+  if (flipped) { flipped = false; $("card").classList.remove("flip"); $("flip").textContent = "Show answer"; $("rateBar").classList.add("hide"); }
+  else flipCard();
+};
+$("card").onclick = e => { if (e.target.classList.contains("spk")) return; flipped ? ($("flip").click()) : flipCard(); };
+function go(step) { if (!cards.length) return; idx = (idx + step + cards.length) % cards.length; showCard(); }
+$("prev").onclick = () => go(-1);
+$("next").onclick = () => go(1);
+function rate(rating) {
+  const c = cards[idx];
+  if (!cur.virtual) {
+    c.srs = nextSrs(c.srs, rating);
+    session.counts[rating]++; session.done++;
+    saveDecks(); pushDeck(cur);
+  }
+  cards.splice(idx, 1);
+  if (rating === 0 && !cur.virtual) cards.push(c);
+  if (!cards.length) return endSession();
+  if (idx >= cards.length) idx = 0;
+  showCard();
+}
+$("rateAgain").onclick = () => rate(0);
+$("rateHard").onclick  = () => rate(1);
+$("rateGood").onclick  = () => rate(2);
+$("rateEasy").onclick  = () => rate(3);
+function endSession() {
+  const s = session || { total: 0, done: 0, started: Date.now(), counts: [0,0,0,0] };
+  const mins = Math.max(1, Math.round((Date.now() - s.started) / 60000));
+  $("navRow").classList.add("hide"); $("rateBar").classList.add("hide"); $("card").classList.add("hide");
+  const sum = $("summary"); sum.classList.remove("hide");
+  sum.innerHTML = '<p class="lbl">Session complete</p>' +
+    '<div class="big">' + s.counts[2] + '+' + s.counts[3] + '</div>' +
+    '<p class="lbl">' + s.done + ' reviews · ' + mins + ' min · ' +
+    s.counts[0] + ' again, ' + s.counts[1] + ' hard, ' + s.counts[2] + ' good, ' + s.counts[3] + ' easy</p>' +
+    '<div class="row center" style="margin-top:20px">' +
+    '<button class="p" onclick="document.getElementById(\'backDecks\').click()">Back to decks</button>' +
+    '<button onclick="document.getElementById(\'filterAll\').click()">Study all again</button>' +
+    '</div>';
+  $("cnt").textContent = "Session complete"; $("dueInfo").textContent = "";
+}
+document.addEventListener("keydown", e => {
+  if ($("studyView").classList.contains("hide") || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.key === "ArrowRight") go(1);
+  else if (e.key === "ArrowLeft") go(-1);
+  else if (e.key === " ") { e.preventDefault(); $("flip").click(); }
+  else if (flipped && "1234".includes(e.key)) rate(+e.key - 1);
+});
+
+/* ========== study extras ========== */
+$("resetProgress").onclick = () => {
+  if (!cur || cur.virtual) return;
+  if (!confirm("Reset all SRS progress for this deck?")) return;
+  cur.cards.forEach(c => { delete c.srs; });
+  saveDecks(); pushDeck(cur);
+  statusEl.textContent = "Progress reset.";
+  startSession(cur, "all");
+};
+$("shuffle").onclick = () => {
+  for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
+  idx = 0; showCard();
+};
+$("filterDue").onclick    = () => cur && startSession(cur, "due");
+$("filterAll").onclick    = () => cur && startSession(cur, "all");
+$("filterMissed").onclick = () => cur && startSession(cur, "missed");
+$("cardColor").oninput  = () => { if (cur && !cur.virtual) { cur.color = $("cardColor").value; styleCard(); } };
+$("cardColor").onchange = () => { saveDecks(); pushDeck(cur); };
+$("resetColor").onclick = () => { if (cur && !cur.virtual) { cur.color = null; saveDecks(); pushDeck(cur); styleCard(); } };
+$("edit").onclick = () => {
+  const c = cards[idx]; if (!c) return;
+  const f = prompt("Question:", c.front); if (f === null) return;
+  const b = prompt("Answer:", c.back);   if (b === null) return;
+  if (f.trim()) c.front = f.trim();
+  if (b.trim()) c.back  = b.trim();
+  saveDecks(); pushDeck(cur); showCard();
+};
+$("add").onclick = () => {
+  if (!cur || cur.virtual) { statusEl.textContent = "Open a single deck to add cards."; return; }
+  const f = prompt("New card question:"); if (!f || !f.trim()) return;
+  const b = prompt("Answer:"); if (!b || !b.trim()) return;
+  const c = { front: f.trim(), back: b.trim() };
+  cur.cards.push(c); cards.push(c);
+  saveDecks(); pushDeck(cur);
+  idx = cards.length - 1; showCard();
+};
+$("del").onclick = () => {
+  if (!cur || cur.virtual) { statusEl.textContent = "Open a single deck to delete cards."; return; }
+  if (!confirm("Delete this card?")) return;
+  const c = cards[idx];
+  cur.cards.splice(cur.cards.indexOf(c), 1);
+  cards.splice(idx, 1);
+  if (!cur.cards.length) { decks = decks.filter(d => d !== cur); saveDecks(); pushDelete(cur.id); show("decks"); return; }
+  saveDecks(); pushDeck(cur);
+  if (!cards.length) cards = cur.cards.slice();
+  idx = Math.min(idx, cards.length - 1);
+  showCard();
+};
+$("mix").onclick = () => {
+  const all = decks.flatMap(d => d.cards.map(c => Object.assign({}, c)));
+  if (!all.length) { statusEl.textContent = "No cards yet."; return; }
+  cur = { id: "mix", virtual: true, name: "All decks", cards: all, color: null, created: Date.now(), isPublic: false };
+  startSession(cur, "all");
+};
+
+/* ========== card editor ========== */
+function openEditorFromStudy() {
+  if (!cur || cur.virtual) { statusEl.textContent = "Open a single deck to edit its cards."; return; }
+  editTarget = cur;
+  editCards = editTarget.cards.map(c => ({ front: c.front, back: c.back, srs: c.srs }));
+  editReturn = "study"; renderEditor(); show("edit");
+}
+function openEditorFor(id) {
+  const d = decks.find(x => x.id === id); if (!d) return;
+  editTarget = d;
+  editCards = d.cards.map(c => ({ front: c.front, back: c.back, srs: c.srs }));
+  editReturn = "decks"; renderEditor(); show("edit");
+}
+$("openEditor").onclick = openEditorFromStudy;
+$("openEditor2").onclick = openEditorFromStudy;
+function renderEditor() {
+  $("editTitle").textContent = editTarget ? ("Edit: " + editTarget.name) : "Edit cards";
+  const list = $("editList"); list.innerHTML = "";
+  if (!editCards.length) {
+    list.innerHTML = '<div class="editempty">No cards yet. Use <b>+ Add card</b> below to create one.</div>';
+    return;
+  }
+  editCards.forEach((c, i) => {
+    const row = document.createElement("div"); row.className = "editrow";
+    const num = document.createElement("div"); num.className = "editnum"; num.textContent = i + 1;
+    const fields = document.createElement("div"); fields.className = "editfields";
+    const fLbl = document.createElement("span"); fLbl.className = "lbl"; fLbl.textContent = "Front / question";
+    const fTA = document.createElement("textarea"); fTA.rows = 2; fTA.placeholder = "Question or term…"; fTA.value = c.front;
+    fTA.oninput = e => { editCards[i].front = e.target.value; };
+    const bLbl = document.createElement("span"); bLbl.className = "lbl"; bLbl.textContent = "Back / answer";
+    const bTA = document.createElement("textarea"); bTA.rows = 2; bTA.placeholder = "Answer or definition…"; bTA.value = c.back;
+    bTA.oninput = e => { editCards[i].back = e.target.value; };
+    fields.append(fLbl, fTA, bLbl, bTA);
+    const del = document.createElement("button");
+    del.className = "editdel danger"; del.type = "button"; del.title = "Delete card"; del.textContent = "✕";
+    del.onclick = () => { if (!confirm("Delete card " + (i + 1) + "?")) return; editCards.splice(i, 1); renderEditor(); };
+    row.append(num, fields, del);
+    list.appendChild(row);
+  });
+}
+$("editAdd").onclick = () => {
+  editCards.push({ front: "", back: "" }); renderEditor();
+  const rows = document.querySelectorAll(".editrow");
+  if (rows.length) {
+    const last = rows[rows.length - 1];
+    const ta = last.querySelector("textarea");
+    if (ta) { ta.focus(); ta.scrollIntoView({ behavior: "smooth", block: "center" }); }
+  }
+};
+function cancelEditor() {
+  if (!editTarget) { show("decks"); return; }
+  const orig = JSON.stringify(editTarget.cards.map(c => ({ f: c.front, b: c.back })));
+  const now  = JSON.stringify(editCards.filter(c => (c.front||"").trim() || (c.back||"").trim()).map(c => ({ f: (c.front||"").trim(), b: (c.back||"").trim() })));
+  if (orig !== now && !confirm("Discard your unsaved changes?")) return;
+  editTarget = null; editCards = [];
+  if (editReturn === "study" && cur && !cur.virtual) show("study"); else show("decks");
+}
+$("editBack").onclick = cancelEditor;
+$("editCancel").onclick = cancelEditor;
+function saveEditor() {
+  if (!editTarget) return;
+  const cleaned = editCards.map(c => ({ front: (c.front || "").trim(), back: (c.back || "").trim(), srs: c.srs })).filter(c => c.front && c.back);
+  if (!cleaned.length) { statusEl.textContent = "Add at least one complete card before saving."; return; }
+  const before = editTarget.cards.length;
+  editTarget.cards = cleaned;
+  saveDecks(); pushDeck(editTarget);
+  $("nDecks").textContent = decks.length;
+  statusEl.textContent = "Saved " + cleaned.length + " card(s)" + (cleaned.length !== before ? " (" + (cleaned.length - before >= 0 ? "+" : "") + (cleaned.length - before) + ")" : "") + ".";
+  if (editReturn === "study" && cur && cur.id === editTarget.id && !cur.virtual) {
+    const tgt = editTarget; editTarget = null; editCards = [];
+    startSession(tgt, dueCount(tgt) ? "due" : "all");
+  } else {
+    editTarget = null; editCards = []; renderDecks(); show("decks");
+  }
+}
+$("editSave").onclick = saveEditor;
+$("editSave2").onclick = saveEditor;
+
+/* ========== TTS ========== */
+let voices = [];
+function loadVoices() {
+  if (!("speechSynthesis" in window)) { $("voice").disabled = true; return; }
+  voices = speechSynthesis.getVoices();
+  const sel = $("voice"); const c = sel.value;
+  sel.innerHTML = '<option value="">Default</option>' + voices.map((v, i) => '<option value="' + i + '">' + v.name + ' — ' + v.lang + '</option>').join("");
+  if (c) sel.value = c;
+}
+if ("speechSynthesis" in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text) {
+  if (!("speechSynthesis" in window)) { statusEl.textContent = "Read aloud is not supported."; return; }
+  if (!text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  const vi = $("voice").value;
+  if (vi && voices[+vi]) u.voice = voices[+vi];
+  u.rate = parseFloat($("rate").value) || 1;
+  speechSynthesis.speak(u);
+}
+document.querySelectorAll(".spk").forEach(b => {
+  b.onclick = e => { e.stopPropagation(); speak(b.dataset.speak === "front" ? cards[idx].front : cards[idx].back); };
+});
+
+/* ========== export ========== */
+function download(name, data, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([data], { type }));
+  a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+}
+const csvQ = s => '"' + s.replace(/"/g, '""') + '"';
+$("csv").onclick = () => {
+  if (!cur) return;
+  const rows = cur.cards.map(c => csvQ(c.front) + "," + csvQ(c.back));
+  download(cur.name + ".csv", "front,back\n" + rows.join("\n"), "text/csv");
+};
+$("anki").onclick = () => {
+  if (!cur) return;
+  const clean = s => s.replace(/[\t\r\n]+/g, " ");
+  download(cur.name + "-anki.txt", cur.cards.map(c => clean(c.front) + "\t" + clean(c.back)).join("\n"), "text/plain");
+  statusEl.textContent = "In Anki: File → Import → pick this file.";
+};
+$("quizlet").onclick = () => {
+  if (!cur) return;
+  const clean = s => s.replace(/[\t\r\n]+/g, " ");
+  download(cur.name + "-quizlet.txt", cur.cards.map(c => clean(c.front) + "\t" + clean(c.back)).join("\n"), "text/plain");
+  statusEl.textContent = "Quizlet: Create → Import → paste or upload this file.";
+};
+$("notion").onclick = () => {
+  if (!cur) return;
+  let md = "# " + cur.name + "\n\n";
+  cur.cards.forEach((c, i) => { md += "**" + (i + 1) + ". " + c.front + "**\n\n" + c.back + "\n\n---\n\n"; });
+  download(cur.name + "-notion.md", md, "text/markdown");
+};
+$("printPdf").onclick = () => {
+  if (!cur) return;
+  const w = window.open("", "_blank");
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(cur.name) + '</title><style>' +
+    'body{font:14px/1.5 system-ui,-apple-system,sans-serif;padding:24px;max-width:760px;margin:auto;color:#111}' +
+    'h1{font-size:20px;margin:0 0 20px}' +
+    '.c{border:1px solid #ddd;padding:12px 14px;margin:8px 0;border-radius:8px;page-break-inside:avoid}' +
+    '.f{font-weight:600;margin-bottom:4px}.b{color:#444}' +
+    '@media print{.c{border-color:#999}}' +
+    '</style></head><body><h1>' + esc(cur.name) + '</h1>' +
+    cur.cards.map((c, i) => '<div class="c"><div class="f">' + (i + 1) + '. ' + esc(c.front) + '</div><div class="b">' + esc(c.back) + '</div></div>').join("") +
+    '</body></html>');
+  w.document.close(); setTimeout(() => w.print(), 350);
+};
+$("exportAll").onclick = () => download("flashcards-backup-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify({ decks, notes: notesLib }, null, 2), "application/json");
+$("importAll").onclick = () => {
+  const i = document.createElement("input");
+  i.type = "file"; i.accept = ".json,application/json";
+  i.onchange = async () => {
+    try {
+      const obj = JSON.parse(await i.files[0].text());
+      const addDecks = Array.isArray(obj) ? obj : (obj.decks || []);
+      const addNotes = Array.isArray(obj) ? [] : (obj.notes || []);
+      addDecks.forEach(d => {
+        d.id = Cloud.uuid(); d.created = d.created || Date.now();
+        d.cards = (d.cards || []).map(c => ({ front: String(c.front || ""), back: String(c.back || ""), srs: c.srs }));
+        decks.unshift(d); pushDeck(d);
+      });
+      addNotes.forEach(n => { n.id = Cloud.uuid(); notesLib.unshift(n); });
+      saveDecks(); saveNotes(); renderDecks(); renderNotesLib();
+      $("nDecks").textContent = decks.length;
+      $("nNotes").textContent = notesLib.length;
+      statusEl.textContent = "Imported " + addDecks.length + " deck(s)" + (addNotes.length ? " and " + addNotes.length + " note(s)" : "") + ".";
+    } catch { statusEl.textContent = "That file didn't look like a backup."; }
+  };
+  i.click();
+};
+
+/* ========== base64 share ========== */
+const enc = s => btoa(unescape(encodeURIComponent(s)));
+const dec = s => decodeURIComponent(escape(atob(s)));
+$("share").onclick = async () => {
+  if (!cur || cur.virtual) { statusEl.textContent = "Open a single deck to share."; return; }
+  const payload = { n: cur.name, c: cur.cards.map(c => [c.front, c.back]) };
+  const link = location.origin + location.pathname + "#d=" + enc(JSON.stringify(payload));
+  try {
+    await navigator.clipboard.writeText(link);
+    statusEl.textContent = "Link copied." + (link.length > 8000 ? " It's long — some apps may cut it off." : "") + " Tip: sign in and Publish for a short public link.";
+  } catch { prompt("Copy this link:", link); }
+};
+
+/* ========== quiz ========== */
+$("quiz").onclick = () => {
+  if (!cur) return;
+  const pool = cur.cards.filter(c => c.front && c.back);
+  if (pool.length < 2) { statusEl.textContent = "You need at least 2 cards for a quiz."; return; }
+  const qs = pool.slice().sort(() => Math.random() - .5).slice(0, Math.min(10, pool.length));
+  const box = $("qbox");
+  let i = 0, score = 0;
+  show("quiz");
+  const next = () => {
+    box.innerHTML = ""; delete box.dataset.lock;
+    if (i >= qs.length) {
+      box.innerHTML = '<h2>Score: ' + score + " / " + qs.length + '</h2><div class="row"><button class="p" id="quizDone">Back to deck</button></div>';
+      $("quizDone").onclick = () => show("study"); return;
+    }
+    const q = qs[i];
+    const wrongs = pool.filter(c => c.back !== q.back).map(c => c.back).sort(() => Math.random() - .5).slice(0, 3);
+    const h = document.createElement("h3");
+    h.textContent = (i + 1) + " / " + qs.length + ". " + q.front;
+    box.appendChild(h);
+    [q.back, ...wrongs].sort(() => Math.random() - .5).forEach(o => {
+      const b = document.createElement("button");
+      b.className = "qopt"; b.textContent = o;
+      b.onclick = () => {
+        if (box.dataset.lock) return; box.dataset.lock = 1;
+        const right = o === q.back; if (right) score++;
+        b.classList.add(right ? "ok" : "no");
+        box.querySelectorAll(".qopt").forEach(x => { if (x.textContent === q.back) x.classList.add("ok"); });
+        const n = document.createElement("button");
+        n.className = "p"; n.style.marginTop = "14px";
+        n.textContent = i + 1 >= qs.length ? "See score" : "Next question";
+        n.onclick = () => { i++; next(); };
+        box.appendChild(n);
+      };
+      box.appendChild(b);
+    });
+  };
+  next();
+};
+
+/* ========== notes ========== */
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<i>$1</i>").replace(/`(.+?)`/g, "<code>$1</code>"); }
+function renderMd(md) {
+  let html = "", list = null;
+  const close = () => { if (list) { html += "</" + list + ">"; list = null; } };
+  for (const line of md.split("\n")) {
+    let m;
+    if ((m = line.match(/^(#{1,3})\s+(.*)/))) { close(); html += "<h" + m[1].length + ">" + inline(m[2]) + "</h" + m[1].length + ">"; }
+    else if ((m = line.match(/^\s*[-*]\s+(.*)/))) { if (list !== "ul") { close(); html += "<ul>"; list = "ul"; } html += "<li>" + inline(m[1]) + "</li>"; }
+    else if ((m = line.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== "ol") { close(); html += "<ol>"; list = "ol"; } html += "<li>" + inline(m[1]) + "</li>"; }
+    else if (line.trim()) { close(); html += "<p>" + inline(line) + "</p>"; }
+    else close();
+  }
+  close(); return html;
+}
+function renderNotesLib() {
+  $("nNotes").textContent = notesLib.length;
+  const list = $("notesList");
+  list.innerHTML = "";
+  if (!notesLib.length) {
+    list.innerHTML = '<p class="sub" style="margin-top:20px">No saved notes yet. Generate notes and hit <b>Save to library</b>.</p>';
+    return;
+  }
+  notesLib.forEach(n => {
+    const el = document.createElement("div"); el.className = "noteitem";
+    const info = document.createElement("div");
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = n.title;
+    const meta = document.createElement("div"); meta.className = "meta";
+    meta.textContent = (n.md.length + " chars · ") + new Date(n.created).toLocaleDateString();
+    info.append(nm, meta);
+    const btns = document.createElement("div"); btns.className = "btns"; btns.style.display = "flex"; btns.style.gap = "6px";
+    const mk = (label, cls, fn) => {
+      const b = document.createElement("button"); b.textContent = label;
+      if (cls) b.className = cls;
+      b.onclick = e => { e.stopPropagation(); fn(); };
+      btns.appendChild(b);
+    };
+    mk("Open", "p", () => openNote(n.id));
+    mk("Delete", "danger", () => {
+      if (confirm('Delete "' + n.title + '"?')) {
+        notesLib = notesLib.filter(x => x.id !== n.id);
+        saveNotes(); renderNotesLib();
+        $("nNotes").textContent = notesLib.length;
+      }
+    });
+    el.append(info, btns);
+    el.onclick = () => openNote(n.id);
+    list.appendChild(el);
+  });
+}
+function openNote(id) {
+  const n = notesLib.find(x => x.id === id); if (!n) return;
+  $("noteTitle").textContent = n.title;
+  $("out").innerHTML = renderMd(n.md);
+  $("noteView").dataset.id = id;
+  show("note");
+}
+$("copyNote").onclick = async () => {
+  const n = notesLib.find(x => x.id === $("noteView").dataset.id); if (!n) return;
+  try { await navigator.clipboard.writeText(n.md); statusEl.textContent = "Copied."; }
+  catch { statusEl.textContent = "Copy failed."; }
+};
+$("downloadNote").onclick = () => {
+  const n = notesLib.find(x => x.id === $("noteView").dataset.id); if (!n) return;
+  download(n.title.replace(/[^\w\- ]+/g, "") + ".md", n.md, "text/markdown");
+};
+$("delNote").onclick = () => {
+  const id = $("noteView").dataset.id;
+  const n = notesLib.find(x => x.id === id); if (!n) return;
+  if (!confirm('Delete "' + n.title + '"?')) return;
+  notesLib = notesLib.filter(x => x.id !== id);
+  saveNotes();
+  $("nNotes").textContent = notesLib.length;
+  renderNotesLib(); show("notesLib");
+};
+function saveCurrentNotes() {
+  if (!notesMd) { statusEl.textContent = "Nothing to save."; return; }
+  const title = prompt("Note title:", ($("genNoteTitle").textContent || "Study notes").slice(0, 80));
+  if (!title || !title.trim()) return;
+  notesLib.unshift({ id: Cloud.uuid(), title: title.trim().slice(0, 80), md: notesMd, created: Date.now() });
+  saveNotes();
+  $("nNotes").textContent = notesLib.length;
+  statusEl.textContent = 'Saved "' + title.trim() + '" to your library' + (user ? " (this device; notes stay local for now)." : ".");
+}
+$("saveNewNote").onclick = saveCurrentNotes;
+$("saveBtnBig").onclick  = saveCurrentNotes;
+$("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(notesMd); statusEl.textContent = "Copied."; }
+  catch { statusEl.textContent = "Copy failed."; }
+};
+$("save").onclick = () => download("study-notes.md", notesMd, "text/markdown");
+
+/* ========== init ========== */
+$("nDecks").textContent = decks.length;
+$("nNotes").textContent = notesLib.length;
+setSource("pdf");
+Cloud.init();
+renderAuth();
+
+(async function loadShared() {
+  const params = new URLSearchParams(location.search);
+  const slug = params.get("d");
+  if (slug && Cloud.isConfigured()) {
+    statusEl.textContent = "Loading shared deck…";
+    try {
+      const d = await Cloud.getPublicDeck(slug);
+      if (!d) { statusEl.textContent = "That shared deck was not found or was unpublished."; return; }
+      const deck = {
+        id: Cloud.uuid(), name: (d.name || "Shared deck").slice(0, 80),
+        cards: (d.cards || []).map(c => ({ front: String(c.front), back: String(c.back) })),
+        color: null, created: Date.now(), isPublic: false, slug: null
+      };
+      decks.unshift(deck);
+      saveDecks(); pushDeck(deck);
+      $("nDecks").textContent = decks.length;
+      history.replaceState(null, "", location.pathname);
+      startSession(deck, "all");
+      statusEl.textContent = 'Imported shared deck "' + deck.name + '".';
+      return;
+    } catch (e) { statusEl.textContent = "Couldn't load that shared deck: " + e.message; return; }
+  }
+  if (location.hash.startsWith("#d=")) {
+    try {
+      const o = JSON.parse(dec(location.hash.slice(3)));
+      const deck = {
+        id: Cloud.uuid(), name: String(o.n || "Shared deck").slice(0, 80),
+        cards: (o.c || []).map(x => ({ front: String(x[0]), back: String(x[1]) })),
+        color: null, created: Date.now(), isPublic: false, slug: null
+      };
+      decks.unshift(deck); saveDecks(); pushDeck(deck);
+      history.replaceState(null, "", location.pathname);
+      $("nDecks").textContent = decks.length;
+      startSession(deck, "all");
+      statusEl.textContent = 'Imported shared deck "' + deck.name + '".';
+    } catch { statusEl.textContent = "That share link is broken."; }
+  }
+})();
+</script>
+</body>
+</html>
