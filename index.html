@@ -92,6 +92,18 @@ label{color:var(--mut);font-size:.9rem}
 #drop b{display:block;font-size:1.08rem;margin-bottom:4px}
 #drop span{color:var(--mut);font-size:.9rem}
 .supported-formats{color:var(--mut);font-size:.75rem;margin-top:10px;text-align:center;letter-spacing:.02em;opacity:.7}
+/* Search boxes */
+.searchwrap{margin-bottom:12px}
+.searchwrap input{
+  width:100%;padding:11px 14px;font-size:.95rem;
+  background:var(--card2);border-color:var(--bd);
+  transition:border-color .15s,background .15s;
+}
+.searchwrap input:focus{outline:none;border-color:var(--acc);background:var(--card)}
+.search-empty{
+  color:var(--mut);text-align:center;padding:36px 20px;font-size:.9rem;
+  border:1px dashed var(--bd);border-radius:var(--r2);margin-top:16px;
+}
 .filelist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .filerow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;
   padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r);
@@ -526,11 +538,13 @@ button,select,input,textarea{touch-action:manipulation}
       <button id="importAll">Import</button>
       <button id="syncNow" class="hide">Sync now</button>
     </div>
+    <div class="searchwrap"><input id="deckSearch" type="text" placeholder="Search decks and cards…" autocomplete="off"></div>
     <div id="deckList"></div>
   </div>
 
   <!-- NOTES LIBRARY -->
   <div id="notesLibView" class="hide">
+    <div class="searchwrap"><input id="noteSearch" type="text" placeholder="Search notes…" autocomplete="off"></div>
     <div id="notesList"></div>
   </div>
 
@@ -904,6 +918,29 @@ $("focusChips").addEventListener("click", e => {
   ta.focus();
 });
 
+/* ========== search ========== */
+let deckQuery = "";
+let noteQuery = "";
+function matchesDeck(d, q) {
+  if (d.name.toLowerCase().includes(q)) return true;
+  return (d.cards || []).some(c =>
+    (c.front || "").toLowerCase().includes(q) ||
+    (c.back || "").toLowerCase().includes(q)
+  );
+}
+function deckCardMatchCount(d, q) {
+  if (d.name.toLowerCase().includes(q)) return 0;
+  return (d.cards || []).filter(c =>
+    (c.front || "").toLowerCase().includes(q) ||
+    (c.back || "").toLowerCase().includes(q)
+  ).length;
+}
+function matchesNote(n, q) {
+  return n.title.toLowerCase().includes(q) || (n.md || "").toLowerCase().includes(q);
+}
+$("deckSearch").oninput = e => { deckQuery = e.target.value; renderDecks(); };
+$("noteSearch").oninput = e => { noteQuery = e.target.value; renderNotesLib(); };
+
 /* ========== auth UI ========== */
 function renderAuth() {
   const chip = $("authBtn"), av = $("authAv"), em = $("authEm");
@@ -1240,6 +1277,7 @@ function renderFileList() {
     box.appendChild(actions);
   }
 }
+
 /* ========== text ========== */
 $("rawText").oninput = () => {
   const n = $("rawText").value.length;
@@ -1498,7 +1536,6 @@ async function extractAllPdfs(from, to) {
     renderFileList();
   }
 }
-
 /* ========== generate ========== */
 function deckNameFrom(files, urlTitle) {
   if (files.length === 1) return files[0].name.replace(/\.[^.]+$/, "").slice(0, 80);
@@ -1629,7 +1666,16 @@ function renderDecks() {
       '</p>';
     return;
   }
-  decks.forEach(d => {
+
+  const q = (deckQuery || "").trim().toLowerCase();
+  const visible = q ? decks.filter(d => matchesDeck(d, q)) : decks;
+
+  if (!visible.length) {
+    list.innerHTML = '<div class="search-empty">No decks match "<b>' + escHtml(q) + '</b>"</div>';
+    return;
+  }
+
+  visible.forEach(d => {
     const el = document.createElement("div"); el.className = "deckitem";
     const info = document.createElement("div");
     const nm = document.createElement("div"); nm.className = "nm";
@@ -1640,6 +1686,13 @@ function renderDecks() {
     const due = dueCount(d);
     const learned = d.cards.filter(isLearned).length;
     meta.textContent = d.cards.length + " cards · " + learned + " learned · " + new Date(d.created).toLocaleDateString();
+    if (q) {
+      const mc = deckCardMatchCount(d, q);
+      if (mc > 0) {
+        const mb = document.createElement("span"); mb.className = "badge due"; mb.textContent = mc + " card match" + (mc === 1 ? "" : "es");
+        meta.append(" · ", mb);
+      }
+    }
     if (due) { const b = document.createElement("span"); b.className = "badge due"; b.textContent = due + " due"; meta.append(" · ", b); }
     if (user) { const cb = document.createElement("span"); cb.className = "badge cloud"; cb.textContent = "☁ yours"; meta.append(" · ", cb); }
     else { const gb = document.createElement("span"); gb.className = "badge guest"; gb.textContent = "guest"; meta.append(" · ", gb); }
@@ -2114,7 +2167,16 @@ function renderNotesLib() {
     list.innerHTML = '<p class="sub" style="margin-top:20px">No saved notes yet. Generate notes and hit <b>Save to library</b>.</p>';
     return;
   }
-  notesLib.forEach(n => {
+
+  const q = (noteQuery || "").trim().toLowerCase();
+  const visible = q ? notesLib.filter(n => matchesNote(n, q)) : notesLib;
+
+  if (!visible.length) {
+    list.innerHTML = '<div class="search-empty">No notes match "<b>' + escHtml(q) + '</b>"</div>';
+    return;
+  }
+
+  visible.forEach(n => {
     const el = document.createElement("div"); el.className = "noteitem";
     const info = document.createElement("div");
     const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = n.title;
@@ -2263,4 +2325,4 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 </body>
-</html>
+</html>  
