@@ -18,7 +18,8 @@
         storageKey: "fc-auth",
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        multiTab: false
       }
     });
     client.auth.onAuthStateChange((_ev, session) => {
