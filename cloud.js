@@ -30,18 +30,25 @@
   const current = () => user;
   const isConfigured = configured;
 
+  /* ---------- auth ---------- */
   async function signInEmail(email) {
     return client.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: location.origin + location.pathname }
     });
   }
+
+  async function verifyOtp(email, token) {
+    return client.auth.verifyOtp({ email, token, type: "email" });
+  }
+
   async function signInGoogle() {
     return client.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: location.origin + location.pathname }
     });
   }
+
   async function signOut() { return client.auth.signOut(); }
 
   /* ---------- decks ---------- */
@@ -160,7 +167,7 @@
 
   window.Cloud = {
     init, onAuth, current, isConfigured,
-    signInEmail, signInGoogle, signOut,
+    signInEmail, verifyOtp, signInGoogle, signOut,
     listMyDecks, upsertDeck, deleteDeck, bulkUpsert,
     publishDeck, unpublishDeck, getPublicDeck,
     uuid
