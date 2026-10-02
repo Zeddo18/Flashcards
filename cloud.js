@@ -13,7 +13,13 @@
   function init() {
     if (!configured()) return false;
     client = window.supabase.createClient(cfg.url, cfg.key, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: {
+        storage: window.sessionStorage,
+        storageKey: "fc-auth",
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
     });
     client.auth.onAuthStateChange((_ev, session) => {
       user = (session && session.user) || null;
