@@ -10,6 +10,9 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Flashcards</title>
 <style>
 :root{
@@ -23,7 +26,7 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--fg);
-  font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font:16px/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   transition:background .25s,color .25s;-webkit-font-smoothing:antialiased}
 main{max-width:760px;margin:0 auto;padding:20px 18px 80px;
   padding-left:max(18px,env(safe-area-inset-left));
@@ -265,26 +268,56 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
   display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem}
 .userchip .em{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mut)}
 .userchip.signed .em{color:var(--fg)}
-.modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);
+
+/* ============ MODAL ============ */
+.modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.65);
   display:flex;align-items:center;justify-content:center;padding:20px;
-  animation:fadeIn .15s ease;backdrop-filter:blur(3px)}
+  animation:fadeIn .18s ease;backdrop-filter:blur(6px)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal-card{background:#1b1e24;border:1px solid var(--bd2);border-radius:var(--r2);
-  padding:22px;max-width:380px;width:100%;
-  box-shadow:0 20px 60px rgba(0,0,0,.5);
-  animation:popIn .2s cubic-bezier(.3,1.4,.5,1);position:relative}
-@keyframes popIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
-.modal-card h2{margin:0 0 6px;font-size:1.2rem}
-.modal-x{position:absolute;top:10px;right:10px;padding:6px 10px;font-size:.9rem;
-  background:transparent;border-color:transparent;color:var(--mut)}
-.modal-x:hover{color:var(--fg);background:var(--card)}
-.modal-card input{width:100%;margin:14px 0 10px}
-.auth-divider{text-align:center;color:var(--mut);font-size:.8rem;margin:14px 0;position:relative}
-.auth-divider::before,.auth-divider::after{content:"";position:absolute;top:50%;width:calc(50% - 20px);height:1px;background:var(--bd)}
+.modal-card{background:#1b1e24;border:1px solid var(--bd2);border-radius:22px;
+  padding:28px 26px;max-width:400px;width:100%;
+  box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03);
+  animation:popIn .25s cubic-bezier(.3,1.4,.5,1);position:relative}
+@keyframes popIn{from{transform:scale(.94) translateY(8px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-card h2{margin:0 0 4px;font-size:1.4rem;font-weight:700;letter-spacing:-.02em}
+.modal-card .sub{font-size:.9rem;line-height:1.5;color:var(--mut);margin:0 0 18px}
+.modal-x{position:absolute;top:12px;right:12px;padding:7px 11px;font-size:.85rem;
+  background:transparent;border-color:transparent;color:var(--mut);opacity:.6;line-height:1}
+.modal-x:hover{color:var(--fg);background:var(--card);opacity:1}
+.modal-card input{width:100%;margin:0 0 12px;padding:13px 16px;
+  font-size:1rem;background:rgba(0,0,0,.25);
+  border-color:var(--bd);transition:border-color .15s,background .15s}
+.modal-card input:focus{outline:none;border-color:var(--acc);background:rgba(0,0,0,.35)}
+#authStep1,#authStep2{display:flex;flex-direction:column}
+#authStep1 .p,#authStep2 .p{margin-bottom:0}
+.auth-divider{text-align:center;color:var(--mut);font-size:.75rem;margin:16px 0 14px;position:relative;letter-spacing:.06em;text-transform:uppercase}
+.auth-divider::before,.auth-divider::after{content:"";position:absolute;top:50%;width:calc(50% - 24px);height:1px;background:var(--bd)}
 .auth-divider::before{left:0} .auth-divider::after{right:0}
-#authMsg{min-height:1.3em;text-align:center;margin-top:10px;font-size:.85rem}
+#authMsg{min-height:1.3em;text-align:center;margin-top:12px;font-size:.87rem;font-weight:500}
 #authMsg.ok{color:#a7eccb}
 #authMsg.err{color:#ffb0b0}
+#authCode{
+  text-align:center;font-size:1.55rem;font-weight:600;
+  letter-spacing:.5em;padding:16px 12px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  background:rgba(0,0,0,.25);
+  text-indent:.5em;
+}
+#authCode::placeholder{letter-spacing:.15em;font-size:.95rem;font-weight:400;color:var(--mut);text-indent:0}
+#authCode:focus{outline:none;border-color:var(--acc);background:rgba(0,0,0,.35)}
+#authSentTo{color:var(--fg);font-weight:600;word-break:break-all}
+.resend-row{
+  display:flex;justify-content:center;align-items:center;gap:6px;
+  margin-top:16px;font-size:.83rem;color:var(--mut);
+}
+.resend-btn{
+  background:none;border:none;padding:4px 8px;color:var(--acc);
+  font-weight:600;cursor:pointer;font-size:.83rem;border-radius:6px;
+  transition:background .15s,color .15s;
+}
+.resend-btn:hover:not(:disabled){background:rgba(124,147,255,.12);color:#a5b7ff}
+.resend-btn:disabled{color:var(--mut);cursor:not-allowed;opacity:.7}
+
 button,select,input,textarea{touch-action:manipulation}
 @media (max-width:600px){
   h1{font-size:1.3rem}
@@ -622,9 +655,9 @@ button,select,input,textarea{touch-action:manipulation}
 <div id="authModal" class="modal hide">
   <div class="modal-card">
     <button class="modal-x" id="authClose" type="button">✕</button>
-    <h2>Sign in</h2>
 
     <div id="authStep1">
+      <h2>Sign in</h2>
       <p class="sub">Save your decks to the cloud and sync across devices.</p>
       <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
       <button id="authEmailBtn" class="p big" type="button">Send code</button>
@@ -633,12 +666,16 @@ button,select,input,textarea{touch-action:manipulation}
     </div>
 
     <div id="authStep2" class="hide">
-      <p class="sub">We sent a code to <b id="authSentTo"></b>.</p>
-      <input id="authCode" type="text" inputmode="numeric" maxlength="10" placeholder="Enter code"
-             autocomplete="one-time-code"
-             style="text-align:center;font-size:1.4rem;letter-spacing:.3em">
+      <h2>Check your email</h2>
+      <p class="sub">We sent a code to <b id="authSentTo"></b>. Enter it below to sign in.</p>
+      <input id="authCode" type="text" inputmode="numeric" maxlength="10"
+             placeholder="Enter the code" autocomplete="one-time-code">
       <button id="authVerifyBtn" class="p big" type="button">Verify code</button>
-      <button id="authBackBtn" class="ghost" type="button">Use a different email</button>
+      <div class="resend-row">
+        <span id="resendLabel">Didn't get it?</span>
+        <button id="authResendBtn" class="resend-btn" type="button">Resend code</button>
+      </div>
+      <button id="authBackBtn" class="ghost" type="button" style="margin-top:10px">Use a different email</button>
     </div>
 
     <p id="authMsg"></p>
@@ -794,6 +831,32 @@ function renderAuth() {
     em.textContent = "Sign in";
   }
 }
+
+/* ---- resend countdown ---- */
+let resendTimer = null;
+function startResendCooldown() {
+  const btn = $("authResendBtn");
+  let left = 60;
+  btn.disabled = true;
+  btn.textContent = "Resend in " + left + "s";
+  clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      clearInterval(resendTimer); resendTimer = null;
+      btn.disabled = false;
+      btn.textContent = "Resend code";
+    } else {
+      btn.textContent = "Resend in " + left + "s";
+    }
+  }, 1000);
+}
+function stopResendCooldown() {
+  clearInterval(resendTimer); resendTimer = null;
+  const btn = $("authResendBtn");
+  if (btn) { btn.disabled = false; btn.textContent = "Resend code"; }
+}
+
 function openAuth() {
   if (!Cloud.isConfigured()) { statusEl.textContent = "Cloud is not configured — fill in supabase-config.js."; return; }
   if (user) {
@@ -806,12 +869,23 @@ function openAuth() {
   $("authStep1").classList.remove("hide");
   $("authStep2").classList.add("hide");
   $("authCode").value = "";
+  stopResendCooldown();
   $("authModal").classList.remove("hide");
   setTimeout(() => $("authEmail").focus(), 50);
 }
 $("authBtn").onclick = openAuth;
-$("authClose").onclick = () => $("authModal").classList.add("hide");
-$("authModal").onclick = e => { if (e.target.id === "authModal") $("authModal").classList.add("hide"); };
+$("authClose").onclick = () => {
+  $("authModal").classList.add("hide");
+  stopResendCooldown();
+};
+$("authModal").onclick = e => {
+  if (e.target.id === "authModal") {
+    $("authModal").classList.add("hide");
+    stopResendCooldown();
+  }
+};
+
+/* ---- step 1: send code ---- */
 $("authEmailBtn").onclick = async () => {
   const email = $("authEmail").value.trim();
   if (!email) { $("authMsg").textContent = "Enter your email."; $("authMsg").className = "err"; return; }
@@ -824,13 +898,35 @@ $("authEmailBtn").onclick = async () => {
     $("authStep1").classList.add("hide");
     $("authStep2").classList.remove("hide");
     $("authMsg").textContent = ""; $("authMsg").className = "";
+    $("authCode").value = "";
     setTimeout(() => $("authCode").focus(), 100);
+    startResendCooldown();
   } catch (e) {
     $("authMsg").textContent = e.message || "Could not send code.";
     $("authMsg").className = "err";
   }
   $("authEmailBtn").disabled = false;
 };
+
+/* ---- resend ---- */
+$("authResendBtn").onclick = async () => {
+  const email = $("authEmail").value.trim();
+  if (!email) return;
+  $("authMsg").textContent = "Sending a new code…"; $("authMsg").className = "";
+  try {
+    const { error } = await Cloud.signInEmail(email);
+    if (error) throw error;
+    $("authMsg").textContent = "New code sent. Use the most recent one."; $("authMsg").className = "ok";
+    $("authCode").value = "";
+    $("authCode").focus();
+    startResendCooldown();
+  } catch (e) {
+    $("authMsg").textContent = e.message || "Could not resend.";
+    $("authMsg").className = "err";
+  }
+};
+
+/* ---- verify ---- */
 $("authVerifyBtn").onclick = async () => {
   const email = $("authEmail").value.trim();
   const token = $("authCode").value.trim();
@@ -841,17 +937,21 @@ $("authVerifyBtn").onclick = async () => {
     const { error } = await Cloud.verifyOtp(email, token);
     if (error) throw error;
     $("authMsg").textContent = "Signed in!"; $("authMsg").className = "ok";
+    stopResendCooldown();
   } catch (e) {
     $("authMsg").textContent = e.message || "That code didn't work. Try again.";
     $("authMsg").className = "err";
   }
   $("authVerifyBtn").disabled = false;
 };
+
+/* ---- back ---- */
 $("authBackBtn").onclick = () => {
   $("authStep2").classList.add("hide");
   $("authStep1").classList.remove("hide");
   $("authCode").value = "";
   $("authMsg").textContent = ""; $("authMsg").className = "";
+  stopResendCooldown();
 };
 $("authCode").addEventListener("keydown", e => { if (e.key === "Enter") $("authVerifyBtn").click(); });
 $("authGoogleBtn").onclick = async () => {
@@ -860,7 +960,7 @@ $("authGoogleBtn").onclick = async () => {
 };
 $("authEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("authEmailBtn").click(); });
 
-/* ========== cloud sync (per-user, migration on first login) ========== */
+/* ========== cloud sync ========== */
 async function pullAndMerge() {
   if (!user || !cloudReady) return;
   statusEl.textContent = "Syncing with cloud…";
