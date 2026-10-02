@@ -623,11 +623,24 @@ button,select,input,textarea{touch-action:manipulation}
   <div class="modal-card">
     <button class="modal-x" id="authClose" type="button">✕</button>
     <h2>Sign in</h2>
-    <p class="sub">Save your decks to the cloud and sync across devices.</p>
-    <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
-    <button id="authEmailBtn" class="p big" type="button">Send magic link</button>
-    <div class="auth-divider">or</div>
-    <button id="authGoogleBtn" class="big" type="button">Continue with Google</button>
+
+    <div id="authStep1">
+      <p class="sub">Save your decks to the cloud and sync across devices.</p>
+      <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
+      <button id="authEmailBtn" class="p big" type="button">Send code</button>
+      <div class="auth-divider">or</div>
+      <button id="authGoogleBtn" class="big" type="button">Continue with Google</button>
+    </div>
+
+    <div id="authStep2" class="hide">
+      <p class="sub">We sent a code to <b id="authSentTo"></b>.</p>
+      <input id="authCode" type="text" inputmode="numeric" maxlength="10" placeholder="Enter code"
+             autocomplete="one-time-code"
+             style="text-align:center;font-size:1.4rem;letter-spacing:.3em">
+      <button id="authVerifyBtn" class="p big" type="button">Verify code</button>
+      <button id="authBackBtn" class="ghost" type="button">Use a different email</button>
+    </div>
+
     <p id="authMsg"></p>
   </div>
 </div>
@@ -790,6 +803,9 @@ function openAuth() {
     return;
   }
   $("authMsg").textContent = ""; $("authMsg").className = "";
+  $("authStep1").classList.remove("hide");
+  $("authStep2").classList.add("hide");
+  $("authCode").value = "";
   $("authModal").classList.remove("hide");
   setTimeout(() => $("authEmail").focus(), 50);
 }
@@ -800,18 +816,44 @@ $("authEmailBtn").onclick = async () => {
   const email = $("authEmail").value.trim();
   if (!email) { $("authMsg").textContent = "Enter your email."; $("authMsg").className = "err"; return; }
   $("authEmailBtn").disabled = true;
-  $("authMsg").textContent = "Sending…"; $("authMsg").className = "";
+  $("authMsg").textContent = "Sending code…"; $("authMsg").className = "";
   try {
     const { error } = await Cloud.signInEmail(email);
     if (error) throw error;
-    $("authMsg").textContent = "Check your inbox — we sent you a magic link.";
-    $("authMsg").className = "ok";
+    $("authSentTo").textContent = email;
+    $("authStep1").classList.add("hide");
+    $("authStep2").classList.remove("hide");
+    $("authMsg").textContent = ""; $("authMsg").className = "";
+    setTimeout(() => $("authCode").focus(), 100);
   } catch (e) {
-    $("authMsg").textContent = e.message || "Could not send link.";
+    $("authMsg").textContent = e.message || "Could not send code.";
     $("authMsg").className = "err";
   }
   $("authEmailBtn").disabled = false;
 };
+$("authVerifyBtn").onclick = async () => {
+  const email = $("authEmail").value.trim();
+  const token = $("authCode").value.trim();
+  if (token.length < 6) { $("authMsg").textContent = "Enter the code from the email."; $("authMsg").className = "err"; return; }
+  $("authVerifyBtn").disabled = true;
+  $("authMsg").textContent = "Verifying…"; $("authMsg").className = "";
+  try {
+    const { error } = await Cloud.verifyOtp(email, token);
+    if (error) throw error;
+    $("authMsg").textContent = "Signed in!"; $("authMsg").className = "ok";
+  } catch (e) {
+    $("authMsg").textContent = e.message || "That code didn't work. Try again.";
+    $("authMsg").className = "err";
+  }
+  $("authVerifyBtn").disabled = false;
+};
+$("authBackBtn").onclick = () => {
+  $("authStep2").classList.add("hide");
+  $("authStep1").classList.remove("hide");
+  $("authCode").value = "";
+  $("authMsg").textContent = ""; $("authMsg").className = "";
+};
+$("authCode").addEventListener("keydown", e => { if (e.key === "Enter") $("authVerifyBtn").click(); });
 $("authGoogleBtn").onclick = async () => {
   try { await Cloud.signInGoogle(); }
   catch (e) { $("authMsg").textContent = e.message; $("authMsg").className = "err"; }
