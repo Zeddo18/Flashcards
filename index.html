@@ -104,6 +104,22 @@ label{color:var(--mut);font-size:.9rem}
   color:var(--mut);text-align:center;padding:36px 20px;font-size:.9rem;
   border:1px dashed var(--bd);border-radius:var(--r2);margin-top:16px;
 }
+/* Today checklist */
+#todayBox{margin-bottom:14px;padding:12px 14px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--card2)}
+#todayBox h3{margin:0 0 10px;font-size:.95rem;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#todayBox h3 .todaycount{color:var(--mut);font-weight:500;font-size:.82rem}
+.today-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--bd)}
+.today-item:first-of-type{border-top:none;padding-top:0}
+.today-item input[type=checkbox]{width:18px;height:18px;flex-shrink:0;accent-color:var(--acc);cursor:pointer;margin:0}
+.today-item .tname{flex:1;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.today-item.done .tname{text-decoration:line-through;color:var(--mut)}
+.today-item .tdue{color:var(--mut);font-size:.78rem;flex-shrink:0}
+.today-item .tbtn{padding:5px 10px;font-size:.8rem;background:transparent;border-color:var(--bd);color:var(--mut)}
+.today-item .tbtn:hover{color:var(--fg);background:var(--card)}
+.today-item .tbtn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+.today-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.today-actions select{padding:6px 10px;font-size:.82rem;flex:1;min-width:120px}
+.today-actions button{padding:6px 12px;font-size:.82rem}  
 .filelist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .filerow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;
   padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r);
@@ -538,6 +554,7 @@ button,select,input,textarea{touch-action:manipulation}
       <button id="importAll">Import</button>
       <button id="syncNow" class="hide">Sync now</button>
     </div>
+    <div id="todayBox" class="hide"></div>
     <div class="searchwrap"><input id="deckSearch" type="text" placeholder="Search decks and cards…" autocomplete="off"></div>
     <div id="deckList"></div>
   </div>
@@ -940,7 +957,125 @@ function matchesNote(n, q) {
 }
 $("deckSearch").oninput = e => { deckQuery = e.target.value; renderDecks(); };
 $("noteSearch").oninput = e => { noteQuery = e.target.value; renderNotesLib(); };
+/* ========== today checklist ========== */
+let todayTodos = load(storageKey("fc_todos"), []);
+function saveTodos() { store(storageKey("fc_todos"), todayTodos); }
 
+function resetStaleTodos() {
+  const todayStr = new Date().toDateString();
+  let changed = false;
+  todayTodos.forEach(t => {
+    if (t.done && t.doneAt && new Date(t.doneAt).toDateString() !== todayStr) {
+      t.done = false;
+      delete t.doneAt;
+      changed = true;
+    }
+  });
+  if (changed) saveTodos();
+}
+
+function renderToday() {
+  resetStaleTodos();
+  const box = $("todayBox");
+  if (!box) return;
+
+  // Drop todos for decks that no longer exist
+  const existingIds = new Set(decks.map(d => d.id));
+  const before = todayTodos.length;
+  todayTodos = todayTodos.filter(t => existingIds.has(t.deckId));
+  if (todayTodos.length !== before) saveTodos();
+
+  if (!todayTodos.length) {
+    box.classList.add("hide");
+    return;
+  }
+  box.classList.remove("hide");
+
+  const doneCount = todayTodos.filter(t => t.done).length;
+  const total = todayTodos.length;
+
+  let html = '<h3>📋 Today<span class="todaycount">' + doneCount + '/' + total + ' done</span></h3>';
+
+  todayTodos.forEach(t => {
+    const d = decks.find(x => x.id === t.deckId);
+    if (!d) return;
+    const due = dueCount(d);
+    const dueLabel = due ? due + " due" : "up to date";
+    html += '<div class="today-item' + (t.done ? " done" : "") + '" data-id="' + d.id + '">';
+    html += '<input type="checkbox" ' + (t.done ? "checked" : "") + ' data-act="toggle">';
+    html += '<span class="tname">' + escHtml(d.name) + '</span>';
+    html += '<span class="tdue">' + dueLabel + '</span>';
+    html += '<button class="tbtn p" data-act="study" type="button">Study</button>';
+    html += '<button class="tbtn" data-act="remove" type="button" title="Remove">✕</button>';
+    html += '</div>';
+  });
+
+  const availableDecks = decks.filter(d => !todayTodos.some(t => t.deckId === d.id));
+  const dueDecks = decks.filter(d => dueCount(d) > 0 && !todayTodos.some(t => t.deckId === d.id));
+
+  html += '<div class="today-actions">';
+  if (availableDecks.length) {
+    html += '<select id="todayAddSelect"><option value="">Add a deck…</option>';
+    availableDecks.forEach(d => { html += '<option value="' + d.id + '">' + escHtml(d.name) + '</option>'; });
+    html += '</select>';
+    html += '<button data-act="add" type="button">Add</button>';
+  }
+  if (dueDecks.length) {
+    html += '<button data-act="adddue" type="button">+ All due (' + dueDecks.length + ')</button>';
+  }
+  if (!availableDecks.length && !dueDecks.length) {
+    html += '<span style="color:var(--mut);font-size:.82rem">Every deck is already on your list.</span>';
+  }
+  html += '</div>';
+
+  box.innerHTML = html;
+
+  box.querySelectorAll("[data-act]").forEach(el => {
+    const act = el.dataset.act;
+
+    const doAct = (id, checked) => {
+      if (act === "adddue") {
+        decks.forEach(d => {
+          if (dueCount(d) > 0 && !todayTodos.some(t => t.deckId === d.id)) {
+            todayTodos.push({ deckId: d.id, done: false });
+          }
+        });
+        saveTodos(); renderToday(); return;
+      }
+      if (act === "add") {
+        const sel = box.querySelector("#todayAddSelect");
+        const newId = sel ? sel.value : "";
+        if (newId) { todayTodos.push({ deckId: newId, done: false }); saveTodos(); renderToday(); }
+        return;
+      }
+      const t = todayTodos.find(x => x.deckId === id);
+      if (!t) return;
+      if (act === "toggle") {
+        t.done = !!checked;
+        if (t.done) t.doneAt = Date.now();
+        else delete t.doneAt;
+        saveTodos(); renderToday();
+      } else if (act === "study") {
+        const d = decks.find(x => x.id === id);
+        if (d) startSession(d, dueCount(d) ? "due" : "all");
+      } else if (act === "remove") {
+        todayTodos = todayTodos.filter(x => x.deckId !== id);
+        saveTodos(); renderToday();
+      }
+    };
+
+    if (el.type === "checkbox") {
+      el.onchange = e => doAct(e.target.closest(".today-item").dataset.id, e.target.checked);
+    } else {
+      el.onclick = e => {
+        const row = e.target.closest(".today-item");
+        const id = row ? row.dataset.id : "";
+        doAct(id);
+      };
+    }
+  });
+}
+  
 /* ========== auth UI ========== */
 function renderAuth() {
   const chip = $("authBtn"), av = $("authAv"), em = $("authEm");
@@ -1165,6 +1300,7 @@ Cloud.onAuth(u => {
   $("syncNow").classList.toggle("hide", !user);
   renderDecks();
   renderNotesLib();
+  renderToday();
   if (user && user.id !== wasUserId) {
     pullAndMerge();
     $("authModal").classList.add("hide");
@@ -1658,6 +1794,7 @@ async function generate() {
 /* ========== decks list ========== */
 function renderDecks() {
   $("nDecks").textContent = decks.length;
+  renderToday();
   const list = $("deckList");
   list.innerHTML = "";
   if (!decks.length) {
