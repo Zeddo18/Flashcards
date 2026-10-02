@@ -38,14 +38,12 @@ h2{font-size:1.1rem;margin:0 0 10px}
 .bgbox small{color:var(--mut);font-size:.8rem}
 .sw{width:20px;height:20px;padding:0;border-radius:50%;border:2px solid var(--bd);cursor:pointer}
 .sw:hover{transform:scale(1.15)}
-
 .tabs{display:flex;gap:2px;margin:0 0 18px;border-bottom:1px solid var(--bd)}
 .tab{background:none;border:none;border-bottom:2px solid transparent;border-radius:0;
   padding:10px 14px;color:var(--mut);cursor:pointer;font:inherit;font-weight:500;
   transition:color .15s,border-color .15s;margin-bottom:-1px}
 .tab:hover{color:var(--fg)}
 .tab.on{color:var(--fg);border-bottom-color:var(--acc)}
-
 button{font:inherit;color:var(--fg);padding:9px 14px;border-radius:var(--r);
   border:1px solid var(--bd);background:var(--card);cursor:pointer;
   transition:background .15s,border-color .15s,transform .06s,filter .15s;
@@ -61,7 +59,6 @@ button.danger:hover{background:rgba(255,107,107,.15)}
 button.icon{padding:9px 12px;min-width:42px;font-size:1.05rem}
 button.big{padding:13px 20px;font-size:1rem;font-weight:600;flex:1}
 button[disabled]{opacity:.4;cursor:not-allowed;pointer-events:none}
-
 select,input[type=number],input[type=text],input[type=url],input[type=email],textarea{
   font:inherit;color:var(--fg);padding:9px 12px;
   border-radius:var(--r);border:1px solid var(--bd);background:var(--card)}
@@ -70,12 +67,10 @@ textarea{resize:vertical;font-family:inherit;width:100%;min-height:60px}
 input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--bd);border-radius:8px;background:none;cursor:pointer}
 input[type=range]{accent-color:var(--acc)}
 label{color:var(--mut);font-size:.9rem}
-
 .hide{display:none!important}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
 .row.tight{margin:8px 0}
 .center{justify-content:center}
-
 .source-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
   padding:4px;border-radius:var(--r2);background:var(--card2);
   border:1px solid var(--bd);margin-bottom:14px}
@@ -83,7 +78,6 @@ label{color:var(--mut);font-size:.9rem}
   padding:10px 8px;border-radius:12px;cursor:pointer;transition:all .15s}
 .src-tab:hover{color:var(--fg);background:var(--card)}
 .src-tab.on{background:var(--card);color:var(--fg);border:1px solid var(--bd2)}
-
 #drop{position:relative;border:2px dashed var(--bd);border-radius:var(--r2);
   background:var(--card2);padding:44px 20px 40px;text-align:center;cursor:pointer;
   transition:border-color .15s,background .15s,transform .15s;overflow:hidden}
@@ -94,7 +88,6 @@ label{color:var(--mut);font-size:.9rem}
 .drop-icon{font-size:2rem;line-height:1;margin-bottom:10px;display:block;transition:transform .2s ease}
 #drop b{display:block;font-size:1.08rem;margin-bottom:4px}
 #drop span{color:var(--mut);font-size:.9rem}
-
 .filelist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .filerow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;
   padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r);
@@ -117,7 +110,6 @@ label{color:var(--mut);font-size:.9rem}
 .filerow .fdel{padding:5px 9px;font-size:.75rem;background:transparent;border-color:transparent;color:var(--mut)}
 .filerow .fdel:hover{color:#ff9a9a;background:rgba(255,107,107,.1)}
 .filelist-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:4px}
-
 .url-row{display:flex;gap:8px;align-items:stretch}
 .url-row input{flex:1;min-width:0}
 .url-row button{flex-shrink:0}
@@ -127,10 +119,8 @@ label{color:var(--mut);font-size:.9rem}
 #urlResult .err{padding:10px 12px;border-radius:var(--r);background:rgba(255,107,107,.10);border:1px solid rgba(255,107,107,.35);color:#ffb0b0}
 #urlResult .load{padding:10px 12px;border-radius:var(--r);background:var(--card2);border:1px solid var(--bd);color:var(--mut);display:flex;align-items:center;gap:8px}
 #urlResult .load::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--bd2);border-top-color:var(--acc);animation:spin .8s linear infinite}
-
 .textmeta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:.8rem;color:var(--mut)}
 #rawText{min-height:180px;font-size:.94rem;background:var(--card)}
-
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;
   padding:14px;border:1px solid var(--bd);border-radius:var(--r2);
   background:var(--card2);margin-top:14px}
@@ -138,7 +128,6 @@ label{color:var(--mut);font-size:.9rem}
 .toolbar .field{display:flex;align-items:center;gap:6px}
 #cardOpt{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 #cardOpt.hide{display:none}
-
 .focusbox{display:flex;flex-direction:column;gap:8px;
   padding:14px;border:1px solid var(--bd);border-radius:var(--r2);
   background:var(--card2);margin-top:10px}
@@ -150,7 +139,6 @@ label{color:var(--mut);font-size:.9rem}
   border:1px solid var(--bd);background:transparent;color:var(--mut);
   cursor:pointer;transition:all .15s}
 .chip-btn:hover{color:var(--fg);border-color:var(--bd2);background:var(--card)}
-
 #progress{margin-top:16px;padding:14px 16px;border:1px solid var(--bd);
   border-radius:var(--r2);background:var(--card2);animation:slideIn .2s ease}
 .prog-wrap{height:8px;border-radius:999px;overflow:hidden;background:var(--bd);margin-bottom:10px}
@@ -163,11 +151,9 @@ label{color:var(--mut);font-size:.9rem}
 .prog-step .pct{color:var(--mut);font-size:.82rem;font-variant-numeric:tabular-nums}
 #progress.done .prog-fill{background:var(--ok)}
 #progress.error .prog-fill{background:var(--bad)}
-
 #summary{text-align:center;padding:40px 20px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--card2);margin-top:20px}
 #summary .big{font-size:2.4rem;font-weight:700;margin:6px 0}
 #summary .lbl{color:var(--mut);font-size:.9rem;margin:0}
-
 .deckitem{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
   border:1px solid var(--bd);background:var(--card);border-radius:var(--r2);
   padding:14px 16px;margin:10px 0;transition:border-color .15s,background .15s}
@@ -183,7 +169,6 @@ label{color:var(--mut);font-size:.9rem}
 .badge.pub{background:rgba(62,207,142,.16);border-color:rgba(62,207,142,.4);color:#a7eccb}
 .badge.cloud{background:rgba(255,184,77,.14);border-color:rgba(255,184,77,.35);color:#ffd199}
 .badge.guest{background:rgba(180,180,180,.12);border-color:rgba(180,180,180,.3);color:var(--mut)}
-
 .studyhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .studyhead .title{flex:1;font-size:1.15rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .progline{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--mut);font-size:.85rem;margin:4px 0 14px;flex-wrap:wrap}
@@ -206,7 +191,6 @@ label{color:var(--mut);font-size:.9rem}
 .rate.r1{color:#ffd199;border-color:rgba(255,184,77,.3)} .rate.r1:hover{background:rgba(255,184,77,.15)}
 .rate.r2{color:#a7eccb;border-color:rgba(62,207,142,.3)} .rate.r2:hover{background:rgba(62,207,142,.15)}
 .rate.r3{color:#c6d2ff;border-color:rgba(124,147,255,.3)} .rate.r3:hover{background:rgba(124,147,255,.15)}
-
 details.tools{margin-top:18px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--card2);overflow:hidden}
 details.tools>summary{padding:12px 16px;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--mut);
   list-style:none;display:flex;align-items:center;justify-content:space-between}
@@ -221,7 +205,6 @@ details.sub>summary{padding:9px 12px;cursor:pointer;font-size:.88rem;font-weight
 details.sub>summary::-webkit-details-marker{display:none}
 details.sub>summary:hover{color:var(--fg)}
 details.sub .toolgrid{padding:4px 10px 10px}
-
 #editList{margin-top:6px}
 .editrow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:start;
   border:1px solid var(--bd);border-radius:var(--r);background:var(--card);padding:10px;margin:8px 0;transition:border-color .15s}
@@ -237,13 +220,11 @@ details.sub .toolgrid{padding:4px 10px 10px}
 .editempty{text-align:center;color:var(--mut);padding:30px 20px;border:1px dashed var(--bd);border-radius:var(--r2);margin:20px 0}
 .editbar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .editbar button{flex:1;min-width:120px}
-
 #qbox{padding:8px 0}
 #qbox h3{font-size:1.05rem;margin:0 0 16px;line-height:1.5}
 .qopt{display:block;width:100%;text-align:left;margin:8px 0;padding:13px 16px;font-size:.98rem}
 .qopt.ok{border-color:var(--ok);background:rgba(62,207,142,.18)}
 .qopt.no{border-color:var(--bad);background:rgba(255,107,107,.18)}
-
 #out,#out2{background:var(--card);border:1px solid var(--bd);border-radius:var(--r2);padding:8px 24px 20px;margin-top:14px;overflow-x:auto}
 #out h1,#out2 h1{font-size:1.4rem;margin:.9em 0 .3em}
 #out h2,#out2 h2{font-size:1.15rem;margin:1.2em 0 .3em;color:var(--acc)}
@@ -251,14 +232,12 @@ details.sub .toolgrid{padding:4px 10px 10px}
 #out ul,#out ol,#out2 ul,#out2 ol{padding-left:22px;margin:.3em 0}
 #out p,#out2 p{margin:.5em 0}
 #out code,#out2 code{background:var(--card2);padding:1px 5px;border-radius:4px;font-size:.9em}
-
 .noteitem{border:1px solid var(--bd);background:var(--card);border-radius:var(--r2);
   padding:14px 16px;margin:10px 0;display:flex;justify-content:space-between;
   gap:12px;align-items:center;flex-wrap:wrap;cursor:pointer;transition:border-color .15s}
 .noteitem:hover{border-color:var(--bd2)}
 .noteitem .nm{font-weight:600;margin-bottom:2px}
 .noteitem .meta{color:var(--mut);font-size:.82rem}
-
 details.menu{position:relative}
 details.menu>summary{list-style:none;cursor:pointer;padding:8px 11px;border-radius:var(--r);
   border:1px solid transparent;color:var(--mut);font-size:1.15rem;line-height:1;transition:background .15s}
@@ -271,12 +250,10 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
 .menu-panel button{justify-content:flex-start;border:none;background:transparent;text-align:left;padding:9px 12px;font-size:.9rem}
 .menu-panel button:hover{background:var(--card)}
 .menu-panel label{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-size:.9rem;color:var(--fg)}
-
 .ttsbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px;
   border:1px solid var(--bd);border-radius:var(--r);background:var(--card2);margin-top:10px;font-size:.85rem}
 .ttsbar select{font-size:.85rem;padding:6px 10px}
 .ttsbar input[type=range]{flex:1;min-width:80px;max-width:160px}
-
 .userchip{
   display:inline-flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;
   border:1px solid var(--bd);border-radius:999px;background:var(--card2);
@@ -288,7 +265,6 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
   display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem}
 .userchip .em{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mut)}
 .userchip.signed .em{color:var(--fg)}
-
 .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);
   display:flex;align-items:center;justify-content:center;padding:20px;
   animation:fadeIn .15s ease;backdrop-filter:blur(3px)}
@@ -309,7 +285,6 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
 #authMsg{min-height:1.3em;text-align:center;margin-top:10px;font-size:.85rem}
 #authMsg.ok{color:#a7eccb}
 #authMsg.err{color:#ffb0b0}
-
 button,select,input,textarea{touch-action:manipulation}
 @media (max-width:600px){
   h1{font-size:1.3rem}
@@ -339,40 +314,3 @@ button,select,input,textarea{touch-action:manipulation}
 }
 </style>
 </head>
-<body>
-<main>
-  <div class="top">
-    <div>
-      <h1>Flashcards</h1>
-      <p class="sub">Turn PDFs, articles, or pasted text into spaced-repetition cards.</p>
-    </div>
-    <div class="topright">
-      <button id="authBtn" class="userchip">
-        <span class="av" id="authAv">?</span>
-        <span class="em" id="authEm">Sign in</span>
-      </button>
-      <div class="bgbox" id="bgbox"><small>Theme</small></div>
-    </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab on" id="tabCreate">Create</button>
-    <button class="tab" id="tabDecks">Decks (<span id="nDecks">0</span>)</button>
-    <button class="tab" id="tabNotes">Notes (<span id="nNotes">0</span>)</button>
-  </div>
-
-  <div id="status"></div>
-
-  <div id="createView">
-    <div class="source-tabs" id="sourceTabs">
-      <button class="src-tab on" data-src="pdf" type="button">📄 PDF files</button>
-      <button class="src-tab" data-src="text" type="button">📝 Paste text</button>
-      <button class="src-tab" data-src="url" type="button">🔗 From URL</button>
-    </div>
-
-    <div class="src-panel" id="pdfSrc">
-      <div id="drop" tabindex="0" role="button" aria-label="Drop PDF files here">
-        <span class="drop-icon">📄</span>
-        <b>Drop PDF files here</b>
-        <span>or click to choose — multiple files allowed</span>
-        <input id="file" type="file" accept="application/pdf" multiple class="hide
