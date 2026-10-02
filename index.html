@@ -1076,26 +1076,45 @@ $("authGoogleBtn").onclick = async () => {
 $("authEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("authEmailBtn").click(); });
 
 /* ========== cloud sync ========== */
+
 async function pullAndMerge() {
   if (!user || !cloudReady) return;
   statusEl.textContent = "Syncing with cloud…";
   try {
-    const cloud = await Cloud.listMyDecks();
-    const byId = new Map(cloud.map(d => [d.id, d]));
-    const localOnly = [];
-    decks.forEach(d => { if (!byId.has(d.id)) localOnly.push(d); else byId.set(d.id, d); });
-    if (localOnly.length) {
-      try { await Cloud.bulkUpsert(localOnly); } catch (e) { console.warn("bulk upsert failed", e); }
+    // ---- decks ----
+    const cloudDecks = await Cloud.listMyDecks();
+    const deckById = new Map(cloudDecks.map(d => [d.id, d]));
+    const localDecksOnly = [];
+    decks.forEach(d => { if (!deckById.has(d.id)) localDecksOnly.push(d); else deckById.set(d.id, d); });
+    if (localDecksOnly.length) {
+      try { await Cloud.bulkUpsert(localDecksOnly); } catch (e) { console.warn("deck bulk upsert failed", e); }
     }
-    const merged = [];
-    byId.forEach(d => merged.push(d));
-    merged.sort((a, b) => (b.created || 0) - (a.created || 0));
-    decks = merged;
+    const mergedDecks = [];
+    deckById.forEach(d => mergedDecks.push(d));
+    mergedDecks.sort((a, b) => (b.created || 0) - (a.created || 0));
+    decks = mergedDecks;
     saveDecks();
     $("nDecks").textContent = decks.length;
     if (cur) { const still = decks.find(d => d.id === cur.id); if (still) cur = still; }
     renderDecks();
-    statusEl.textContent = "Synced. " + cloud.length + " cloud deck(s), " + localOnly.length + " pushed.";
+
+    // ---- notes ----
+    const cloudNotes = await Cloud.listMyNotes();
+    const noteById = new Map(cloudNotes.map(n => [n.id, n]));
+    const localNotesOnly = [];
+    notesLib.forEach(n => { if (!noteById.has(n.id)) localNotesOnly.push(n); else noteById.set(n.id, n); });
+    if (localNotesOnly.length) {
+      try { await Cloud.bulkUpsertNotes(localNotesOnly); } catch (e) { console.warn("note bulk upsert failed", e); }
+    }
+    const mergedNotes = [];
+    noteById.forEach(n => mergedNotes.push(n));
+    mergedNotes.sort((a, b) => (b.created || 0) - (a.created || 0));
+    notesLib = mergedNotes;
+    saveNotes();
+    $("nNotes").textContent = notesLib.length;
+    renderNotesLib();
+
+    statusEl.textContent = "Synced. " + cloudDecks.length + " deck(s), " + cloudNotes.length + " note(s).";
   } catch (e) { statusEl.textContent = "Cloud sync failed: " + e.message; }
 }
 Cloud.onAuth(u => {
@@ -1127,6 +1146,14 @@ async function pushDelete(id) {
   if (!user || !cloudReady) return;
   try { await Cloud.deleteDeck(id); } catch (e) { console.warn("delete failed", e); }
 }
+async function pushNote(note) {
+  if (!user || !cloudReady) return;
+  try { await Cloud.upsertNote(note); } catch (e) { console.warn("push note failed", e); }
+}
+async function pushNoteDelete(id) {
+  if (!user || !cloudReady) return;
+  try { await Cloud.deleteNote(id); } catch (e) { console.warn("delete note failed", e); }
+}  
 
 /* ========== source tabs ========== */
 function setSource(mode) {
@@ -1957,7 +1984,8 @@ function renderNotesLib() {
     mk("Delete", "danger", () => {
       if (confirm('Delete "' + n.title + '"?')) {
         notesLib = notesLib.filter(x => x.id !== n.id);
-        saveNotes(); renderNotesLib();
+        saveNotes(); pushNoteDelete(n.id);
+        renderNotesLib();
         $("nNotes").textContent = notesLib.length;
       }
     });
@@ -1988,6 +2016,7 @@ $("delNote").onclick = () => {
   if (!confirm('Delete "' + n.title + '"?')) return;
   notesLib = notesLib.filter(x => x.id !== id);
   saveNotes();
+  pushNoteDelete(id);
   $("nNotes").textContent = notesLib.length;
   renderNotesLib(); show("notesLib");
 };
@@ -1995,10 +2024,12 @@ function saveCurrentNotes() {
   if (!notesMd) { statusEl.textContent = "Nothing to save."; return; }
   const title = prompt("Note title:", ($("genNoteTitle").textContent || "Study notes").slice(0, 80));
   if (!title || !title.trim()) return;
-  notesLib.unshift({ id: Cloud.uuid(), title: title.trim().slice(0, 80), md: notesMd, created: Date.now() });
+  const note = { id: Cloud.uuid(), title: title.trim().slice(0, 80), md: notesMd, created: Date.now() };
+  notesLib.unshift(note);
   saveNotes();
+  pushNote(note);
   $("nNotes").textContent = notesLib.length;
-  statusEl.textContent = 'Saved "' + title.trim() + '" to your library' + (user ? " (this device; notes stay local for now)." : ".");
+  statusEl.textContent = 'Saved "' + title.trim() + '" to your library' + (user ? " — synced to your account." : ".");
 }
 $("saveNewNote").onclick = saveCurrentNotes;
 $("saveBtnBig").onclick  = saveCurrentNotes;
