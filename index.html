@@ -270,8 +270,13 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
 .userchip.signed .em{color:var(--fg)}
 .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.65);
   display:flex;align-items:center;justify-content:center;padding:20px;
-  animation:fadeIn .18s ease;backdrop-filter:blur(6px)}
+  animation:fadeIn .18s ease;backdrop-filter:blur(6px)};overflow-y:auto;overscroll-behavior:contain}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal-card{margin:auto}
+@media (max-width:600px){
+  .modal{align-items:flex-start;padding-top:max(20px,env(safe-area-inset-top))}
+  .modal-card{margin-top:0;margin-bottom:0}
+}
 .modal-card{background:#1b1e24;border:1px solid var(--bd2);border-radius:22px;
   padding:28px 26px;max-width:400px;width:100%;
   box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03);
@@ -2035,7 +2040,22 @@ renderAuth();
   }
 })();
 
+/* ========== mobile keyboard fix ========== */
+if ("visualViewport" in window) {
+  window.visualViewport.addEventListener("resize", () => {
+    const openModal = document.querySelector(".modal:not(.hide)");
+    if (!openModal) return;
+    const focused = document.activeElement;
+    if (focused && openModal.contains(focused)) {
+      setTimeout(() => {
+        focused.scrollIntoView({ block: "center", behavior: "smooth" });
+      }, 50);
+    }
+  });
+}
+
 /* ========== service worker ========== */
+  
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
