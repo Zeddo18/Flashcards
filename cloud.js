@@ -18,8 +18,7 @@
         storageKey: "fc-auth",
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
-        multiTab: false
+        detectSessionInUrl: true
       }
     });
     client.auth.onAuthStateChange((_ev, session) => {
@@ -44,18 +43,15 @@
       options: { emailRedirectTo: location.origin + location.pathname }
     });
   }
-
   async function verifyOtp(email, token) {
     return client.auth.verifyOtp({ email, token, type: "email" });
   }
-
   async function signInGoogle() {
     return client.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: location.origin + location.pathname }
     });
   }
-
   async function signOut() { return client.auth.signOut(); }
 
   /* ---------- decks ---------- */
@@ -92,7 +88,6 @@
     if (error) throw error;
     return (data || []).map(rowToDeck);
   }
-
   async function upsertDeck(deck) {
     if (!user) return null;
     const row = deckToRow(deck);
@@ -102,13 +97,11 @@
     if (error) throw error;
     return rowToDeck(data);
   }
-
   async function deleteDeck(id) {
     if (!user) return;
     const { error } = await client.from("decks").delete().eq("id", id);
     if (error) throw error;
   }
-
   async function bulkUpsert(deckList) {
     if (!user || !deckList.length) return [];
     const rows = deckList.map(deckToRow);
@@ -117,7 +110,6 @@
     if (error) throw error;
     return (data || []).map(rowToDeck);
   }
-
   async function publishDeck(id) {
     if (!user) throw new Error("Sign in first.");
     const slug = makeSlug();
@@ -137,7 +129,6 @@
     if (error) throw error;
     return rowToDeck(data);
   }
-
   async function getPublicDeck(slug) {
     if (!client) {
       if (!configured()) throw new Error("Cloud not configured.");
@@ -174,7 +165,6 @@
       created_at: new Date(note.created || Date.now()).toISOString()
     };
   }
-
   async function listMyNotes() {
     if (!user) return [];
     const { data, error } = await client
@@ -184,7 +174,6 @@
     if (error) throw error;
     return (data || []).map(rowToNote);
   }
-
   async function upsertNote(note) {
     if (!user) return null;
     const row = noteToRow(note);
@@ -194,13 +183,11 @@
     if (error) throw error;
     return rowToNote(data);
   }
-
   async function deleteNote(id) {
     if (!user) return;
     const { error } = await client.from("notes").delete().eq("id", id);
     if (error) throw error;
   }
-
   async function bulkUpsertNotes(noteList) {
     if (!user || !noteList.length) return [];
     const rows = noteList.map(noteToRow);
@@ -216,7 +203,6 @@
     for (let i = 0; i < 10; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
     return s;
   }
-
   function uuid() {
     if (crypto.randomUUID) return crypto.randomUUID();
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
