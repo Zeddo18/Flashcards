@@ -268,8 +268,6 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
   display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem}
 .userchip .em{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mut)}
 .userchip.signed .em{color:var(--fg)}
-
-/* ============ MODAL ============ */
 .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.65);
   display:flex;align-items:center;justify-content:center;padding:20px;
   animation:fadeIn .18s ease;backdrop-filter:blur(6px)}
@@ -317,7 +315,30 @@ details.menu>summary:hover{background:var(--card);color:var(--fg)}
 }
 .resend-btn:hover:not(:disabled){background:rgba(124,147,255,.12);color:#a5b7ff}
 .resend-btn:disabled{color:var(--mut);cursor:not-allowed;opacity:.7}
-
+.acct-head{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.acct-av{
+  width:52px;height:52px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#7c93ff,#3d5afe);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:1.4rem;
+}
+.acct-info{min-width:0;flex:1}
+.acct-name{
+  font-weight:600;font-size:1rem;color:var(--fg);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.acct-email{
+  font-size:.85rem;color:var(--mut);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.acct-badge{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 9px;
+  border-radius:999px;font-size:.72rem;font-weight:600;
+  background:rgba(62,207,142,.16);border:1px solid rgba(62,207,142,.4);
+  color:#a7eccb;margin-top:6px;
+}
+.acct-actions{display:flex;flex-direction:column;gap:8px}
+.acct-actions button{justify-content:center}
 button,select,input,textarea{touch-action:manipulation}
 @media (max-width:600px){
   h1{font-size:1.3rem}
@@ -682,13 +703,34 @@ button,select,input,textarea{touch-action:manipulation}
   </div>
 </div>
 
+<!-- ACCOUNT MODAL (signed in) -->
+<div id="accountModal" class="modal hide">
+  <div class="modal-card">
+    <button class="modal-x" id="accountClose" type="button">✕</button>
+    <h2>Account</h2>
+    <p class="sub">You're signed in. Your decks sync to this account.</p>
+
+    <div class="acct-head">
+      <div class="acct-av" id="acctAv">?</div>
+      <div class="acct-info">
+        <div class="acct-name" id="acctName">—</div>
+        <div class="acct-email" id="acctEmail">—</div>
+        <div class="acct-badge">☁ Synced</div>
+      </div>
+    </div>
+
+    <div class="acct-actions">
+      <button id="acctSyncBtn" class="big" type="button">↻ Sync now</button>
+      <button id="acctSignOutBtn" class="danger big" type="button">Sign out</button>
+    </div>
+  </div>
+</div>
+
 <script>
-/* Per-tab auth: silence Supabase's cross-tab BroadcastChannel.
-   Prevents one tab's login/logout from affecting other open tabs. */
+/* Per-tab auth: silence Supabase's cross-tab BroadcastChannel. */
 (function () {
   const Original = window.BroadcastChannel;
   if (!Original) return;
-
   function SilentChannel(name) {
     this.name = name;
     this.onmessage = null;
@@ -699,7 +741,6 @@ button,select,input,textarea{touch-action:manipulation}
     this.removeEventListener = function () {};
     this.dispatchEvent = function () { return true; };
   }
-
   window.BroadcastChannel = function (name) {
     if (typeof name === "string" && name.toLowerCase().indexOf("supabase") !== -1) {
       return new SilentChannel(name);
@@ -886,12 +927,15 @@ function stopResendCooldown() {
 
 function openAuth() {
   if (!Cloud.isConfigured()) { statusEl.textContent = "Cloud is not configured — fill in supabase-config.js."; return; }
+
   if (user) {
-    if (confirm("Signed in as " + user.email + ".\n\nClick OK to sign out.")) {
-      Cloud.signOut().then(() => { statusEl.textContent = "Signed out."; });
-    }
+    $("acctAv").textContent = (user.email || "?").trim()[0].toUpperCase();
+    $("acctName").textContent = (user.user_metadata && user.user_metadata.full_name) || user.email.split("@")[0];
+    $("acctEmail").textContent = user.email;
+    $("accountModal").classList.remove("hide");
     return;
   }
+
   $("authMsg").textContent = ""; $("authMsg").className = "";
   $("authStep1").classList.remove("hide");
   $("authStep2").classList.add("hide");
@@ -910,6 +954,31 @@ $("authModal").onclick = e => {
     $("authModal").classList.add("hide");
     stopResendCooldown();
   }
+};
+
+/* account modal handlers */
+$("accountClose").onclick = () => $("accountModal").classList.add("hide");
+$("accountModal").onclick = e => {
+  if (e.target.id === "accountModal") $("accountModal").classList.add("hide");
+};
+$("acctSyncBtn").onclick = async () => {
+  const btn = $("acctSyncBtn");
+  btn.disabled = true;
+  btn.textContent = "↻ Syncing…";
+  await pullAndMerge();
+  btn.disabled = false;
+  btn.textContent = "↻ Sync now";
+  setTimeout(() => $("accountModal").classList.add("hide"), 400);
+};
+$("acctSignOutBtn").onclick = async () => {
+  const btn = $("acctSignOutBtn");
+  btn.disabled = true;
+  btn.textContent = "Signing out…";
+  await Cloud.signOut();
+  $("accountModal").classList.add("hide");
+  btn.disabled = false;
+  btn.textContent = "Sign out";
+  statusEl.textContent = "Signed out.";
 };
 
 /* ---- step 1: send code ---- */
