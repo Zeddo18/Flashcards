@@ -682,6 +682,33 @@ button,select,input,textarea{touch-action:manipulation}
   </div>
 </div>
 
+<script>
+/* Per-tab auth: silence Supabase's cross-tab BroadcastChannel.
+   Prevents one tab's login/logout from affecting other open tabs. */
+(function () {
+  const Original = window.BroadcastChannel;
+  if (!Original) return;
+
+  function SilentChannel(name) {
+    this.name = name;
+    this.onmessage = null;
+    this.onmessageerror = null;
+    this.postMessage = function () {};
+    this.close = function () {};
+    this.addEventListener = function () {};
+    this.removeEventListener = function () {};
+    this.dispatchEvent = function () { return true; };
+  }
+
+  window.BroadcastChannel = function (name) {
+    if (typeof name === "string" && name.toLowerCase().indexOf("supabase") !== -1) {
+      return new SilentChannel(name);
+    }
+    return new Original(name);
+  };
+  window.BroadcastChannel.prototype = Original.prototype;
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/supabase-config.js"></script>
 <script src="/cloud.js"></script>
