@@ -873,8 +873,8 @@ const VIEWS = ["create", "decks", "notesLib", "study", "edit", "quiz", "notes", 
 function show(name) {
   VIEWS.forEach(v => $(v + "View").classList.toggle("hide", v !== name));
   $("tabCreate").classList.toggle("on", name === "create" || name === "notes");
-  $("tabDecks").classList.toggle("on", name === "decks" || name === "study" || name === "edit" || name === "quiz" || name === "note");
-  $("tabNotes").classList.toggle("on", name === "notesLib");
+  $("tabDecks").classList.toggle("on", name === "decks" || name === "study" || name === "edit" || name === "quiz");
+  $("tabNotes").classList.toggle("on", name === "notesLib" || name === "note");
   if (name === "decks") renderDecks();
   if (name === "notesLib") renderNotesLib();
 }
@@ -1981,6 +1981,14 @@ function renderNotesLib() {
       btns.appendChild(b);
     };
     mk("Open", "p", () => openNote(n.id));
+    mk("Rename", "", () => {
+      const t = prompt("New title:", n.title);
+      if (!t || !t.trim()) return;
+      n.title = t.trim().slice(0, 80);
+      saveNotes();
+      pushNote(n);
+      renderNotesLib();
+    });
     mk("Delete", "danger", () => {
       if (confirm('Delete "' + n.title + '"?')) {
         notesLib = notesLib.filter(x => x.id !== n.id);
