@@ -119,7 +119,7 @@ label{color:var(--mut);font-size:.9rem}
 .today-item .tbtn.p{background:var(--acc);border-color:var(--acc);color:#fff}
 .today-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
 .today-actions select{padding:6px 10px;font-size:.82rem;flex:1;min-width:120px}
-.today-actions button{padding:6px 12px;font-size:.82rem}  
+.today-actions button{padding:6px 12px;font-size:.82rem}
 .filelist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .filerow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;
   padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r);
@@ -554,7 +554,7 @@ button,select,input,textarea{touch-action:manipulation}
       <button id="importAll">Import</button>
       <button id="syncNow" class="hide">Sync now</button>
     </div>
-    <div id="todayBox" class="hide"></div>
+    <div id="todayBox"></div>
     <div class="searchwrap"><input id="deckSearch" type="text" placeholder="Search decks and cards…" autocomplete="off"></div>
     <div id="deckList"></div>
   </div>
@@ -772,8 +772,7 @@ button,select,input,textarea{touch-action:manipulation}
   </div>
 </div>
 <script>
-/* Per-tab auth: silence Supabase's cross-tab BroadcastChannel.
-   Prevents one tab's login/logout from affecting other open tabs. */
+/* Per-tab auth: silence Supabase's cross-tab BroadcastChannel. */
 (function () {
   const Original = window.BroadcastChannel;
   if (!Original) return;
@@ -957,6 +956,7 @@ function matchesNote(n, q) {
 }
 $("deckSearch").oninput = e => { deckQuery = e.target.value; renderDecks(); };
 $("noteSearch").oninput = e => { noteQuery = e.target.value; renderNotesLib(); };
+
 /* ========== today checklist ========== */
 let todayTodos = load(storageKey("fc_todos"), []);
 function saveTodos() { store(storageKey("fc_todos"), todayTodos); }
@@ -979,36 +979,33 @@ function renderToday() {
   const box = $("todayBox");
   if (!box) return;
 
-  // Drop todos for decks that no longer exist
   const existingIds = new Set(decks.map(d => d.id));
   const before = todayTodos.length;
   todayTodos = todayTodos.filter(t => existingIds.has(t.deckId));
   if (todayTodos.length !== before) saveTodos();
 
-  if (!todayTodos.length) {
-    box.classList.add("hide");
-    return;
-  }
-  box.classList.remove("hide");
-
   const doneCount = todayTodos.filter(t => t.done).length;
   const total = todayTodos.length;
 
-  let html = '<h3>📋 Today<span class="todaycount">' + doneCount + '/' + total + ' done</span></h3>';
+  let html = '<h3>📋 Today' + (total ? '<span class="todaycount">' + doneCount + '/' + total + ' done</span>' : '') + '</h3>';
 
-  todayTodos.forEach(t => {
-    const d = decks.find(x => x.id === t.deckId);
-    if (!d) return;
-    const due = dueCount(d);
-    const dueLabel = due ? due + " due" : "up to date";
-    html += '<div class="today-item' + (t.done ? " done" : "") + '" data-id="' + d.id + '">';
-    html += '<input type="checkbox" ' + (t.done ? "checked" : "") + ' data-act="toggle">';
-    html += '<span class="tname">' + escHtml(d.name) + '</span>';
-    html += '<span class="tdue">' + dueLabel + '</span>';
-    html += '<button class="tbtn p" data-act="study" type="button">Study</button>';
-    html += '<button class="tbtn" data-act="remove" type="button" title="Remove">✕</button>';
-    html += '</div>';
-  });
+  if (!total) {
+    html += '<div style="color:var(--mut);font-size:.85rem;padding:4px 0 8px">Add decks below to build your study plan for today.</div>';
+  } else {
+    todayTodos.forEach(t => {
+      const d = decks.find(x => x.id === t.deckId);
+      if (!d) return;
+      const due = dueCount(d);
+      const dueLabel = due ? due + " due" : "up to date";
+      html += '<div class="today-item' + (t.done ? " done" : "") + '" data-id="' + d.id + '">';
+      html += '<input type="checkbox" ' + (t.done ? "checked" : "") + ' data-act="toggle">';
+      html += '<span class="tname">' + escHtml(d.name) + '</span>';
+      html += '<span class="tdue">' + dueLabel + '</span>';
+      html += '<button class="tbtn p" data-act="study" type="button">Study</button>';
+      html += '<button class="tbtn" data-act="remove" type="button" title="Remove">✕</button>';
+      html += '</div>';
+    });
+  }
 
   const availableDecks = decks.filter(d => !todayTodos.some(t => t.deckId === d.id));
   const dueDecks = decks.filter(d => dueCount(d) > 0 && !todayTodos.some(t => t.deckId === d.id));
@@ -1075,7 +1072,7 @@ function renderToday() {
     }
   });
 }
-  
+
 /* ========== auth UI ========== */
 function renderAuth() {
   const chip = $("authBtn"), av = $("authAv"), em = $("authEm");
@@ -1091,7 +1088,6 @@ function renderAuth() {
   }
 }
 
-/* ---- resend countdown ---- */
 let resendTimer = null;
 function startResendCooldown() {
   const btn = $("authResendBtn");
@@ -1147,7 +1143,6 @@ $("authModal").onclick = e => {
   }
 };
 
-/* account modal handlers */
 $("accountClose").onclick = () => $("accountModal").classList.add("hide");
 $("accountModal").onclick = e => {
   if (e.target.id === "accountModal") $("accountModal").classList.add("hide");
@@ -1172,7 +1167,6 @@ $("acctSignOutBtn").onclick = async () => {
   statusEl.textContent = "Signed out.";
 };
 
-/* ---- step 1: send code ---- */
 $("authEmailBtn").onclick = async () => {
   const email = $("authEmail").value.trim();
   if (!email) { $("authMsg").textContent = "Enter your email."; $("authMsg").className = "err"; return; }
@@ -1194,8 +1188,6 @@ $("authEmailBtn").onclick = async () => {
   }
   $("authEmailBtn").disabled = false;
 };
-
-/* ---- resend ---- */
 $("authResendBtn").onclick = async () => {
   const email = $("authEmail").value.trim();
   if (!email) return;
@@ -1212,8 +1204,6 @@ $("authResendBtn").onclick = async () => {
     $("authMsg").className = "err";
   }
 };
-
-/* ---- verify ---- */
 $("authVerifyBtn").onclick = async () => {
   const email = $("authEmail").value.trim();
   const token = $("authCode").value.trim();
@@ -1231,8 +1221,6 @@ $("authVerifyBtn").onclick = async () => {
   }
   $("authVerifyBtn").disabled = false;
 };
-
-/* ---- back ---- */
 $("authBackBtn").onclick = () => {
   $("authStep2").classList.add("hide");
   $("authStep1").classList.remove("hide");
@@ -1252,7 +1240,6 @@ async function pullAndMerge() {
   if (!user || !cloudReady) return;
   statusEl.textContent = "Syncing with cloud…";
   try {
-    // ---- decks ----
     const cloudDecks = await Cloud.listMyDecks();
     const deckById = new Map(cloudDecks.map(d => [d.id, d]));
     const localDecksOnly = [];
@@ -1269,7 +1256,6 @@ async function pullAndMerge() {
     if (cur) { const still = decks.find(d => d.id === cur.id); if (still) cur = still; }
     renderDecks();
 
-    // ---- notes ----
     const cloudNotes = await Cloud.listMyNotes();
     const noteById = new Map(cloudNotes.map(n => [n.id, n]));
     const localNotesOnly = [];
@@ -1294,13 +1280,13 @@ Cloud.onAuth(u => {
   cloudReady = Cloud.isConfigured();
   decks = loadDecks();
   notesLib = loadNotes();
+  todayTodos = load(storageKey("fc_todos"), []);
   $("nDecks").textContent = decks.length;
   $("nNotes").textContent = notesLib.length;
   renderAuth();
   $("syncNow").classList.toggle("hide", !user);
   renderDecks();
   renderNotesLib();
-  renderToday();
   if (user && user.id !== wasUserId) {
     pullAndMerge();
     $("authModal").classList.add("hide");
@@ -1653,7 +1639,6 @@ async function extractAnyFile(file, from, to, onProgress) {
   throw new Error("Unsupported file type.");
 }
 
-/* ========== extract all files in queue ========== */
 async function extractAllPdfs(from, to) {
   for (let i = 0; i < pdfFiles.length; i++) {
     const entry = pdfFiles[i];
@@ -2462,4 +2447,4 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 </body>
-</html>  
+</html>
