@@ -91,6 +91,7 @@ label{color:var(--mut);font-size:.9rem}
 .drop-icon{font-size:2rem;line-height:1;margin-bottom:10px;display:block;transition:transform .2s ease}
 #drop b{display:block;font-size:1.08rem;margin-bottom:4px}
 #drop span{color:var(--mut);font-size:.9rem}
+.supported-formats{color:var(--mut);font-size:.75rem;margin-top:10px;text-align:center;letter-spacing:.02em;opacity:.7}  
 .filelist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .filerow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;
   padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r);
@@ -118,7 +119,7 @@ label{color:var(--mut);font-size:.9rem}
 .url-row button{flex-shrink:0}
 .hint-line{color:var(--mut);font-size:.8rem;margin-top:8px;line-height:1.5}
 #urlResult{margin-top:10px;font-size:.9rem}
-#urlResult .ok{padding:10px 12px;border-radius:var(--r);background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.35);color:#a7eccb}
+  #urlResult .ok{padding:10px 12px;border-radius:var(--r);background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.35);color:#a7eccb}
 #urlResult .err{padding:10px 12px;border-radius:var(--r);background:rgba(255,107,107,.10);border:1px solid rgba(255,107,107,.35);color:#ffb0b0}
 #urlResult .load{padding:10px 12px;border-radius:var(--r);background:var(--card2);border:1px solid var(--bd);color:var(--mut);display:flex;align-items:center;gap:8px}
 #urlResult .load::before{content:"";width:14px;height:14px;border-radius:50%;border:2px solid var(--bd2);border-top-color:var(--acc);animation:spin .8s linear infinite}
@@ -424,14 +425,14 @@ button,select,input,textarea{touch-action:manipulation}
     </div>
 
     <div class="src-panel" id="pdfSrc">
-      <div id="drop" tabindex="0" role="button" aria-label="Drop  files here">
+      <div id="drop" tabindex="0" role="button" aria-label="Drop files here">
         <span class="drop-icon">📄</span>
         <b>Drop files here</b>
         <span>PDF, Word, PowerPoint, Excel, text, and more</span>
-        <input id="file" type="file" accept="application/pdf" multiple class="hide">
+        <div class="supported-formats">PDF · Word · PowerPoint · Excel · Text · CSV · Markdown · HTML · RTF</div>
+        <input id="file" type="file" multiple class="hide"
+               accept=".pdf,.docx,.pptx,.xlsx,.odt,.odp,.ods,.txt,.md,.csv,.json,.html,.htm,.rtf">
       </div>
-      <div class="filelist" id="fileList"></div>
-    </div>
 
     <div class="src-panel hide" id="textSrc">
       <textarea id="rawText" rows="10" placeholder="Paste or type your text here — chapter notes, an article, a transcript, anything goes."></textarea>
