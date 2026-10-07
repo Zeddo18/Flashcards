@@ -1017,6 +1017,116 @@ button,select,input,textarea,label{touch-action:manipulation}
     </div>
   </div>
 
+  <!-- DECKS -->
+  <div id="decksView" class="hide">
+    <div class="row tight">
+      <button id="mix" class="p">Study all decks</button>
+      <button id="exportAll">Export all</button>
+      <button id="importAll">Import</button>
+      <button id="syncNow" class="hide">Sync now</button>
+    </div>
+    <div id="todayBox"></div>
+    <div class="searchwrap"><input id="deckSearch" type="text" placeholder="Search decks and cards…" autocomplete="off"></div>
+    <div id="deckList"></div>
+  </div>
+
+  <!-- NOTES LIBRARY -->
+  <div id="notesLibView" class="hide">
+    <div class="searchwrap"><input id="noteSearch" type="text" placeholder="Search notes…" autocomplete="off"></div>
+    <div id="notesList"></div>
+  </div>
+
+  <!-- STUDY -->
+  <div id="studyView" class="hide">
+    <div class="studyhead">
+      <button id="backDecks" class="ghost icon" title="Back to decks">←</button>
+      <div class="title" id="deckTitle"></div>
+      <details class="menu">
+        <summary title="Deck settings">⚙</summary>
+        <div class="menu-panel">
+          <button id="renameBtn">Rename deck</button>
+          <button id="openEditor">Edit all cards</button>
+          <button id="publishBtn">Publish publicly</button>
+          <label>Card color <input type="color" id="cardColor" value="#3d5afe"></label>
+          <button id="resetColor">Reset card color</button>
+          <button id="resetProgress" class="danger">Reset all progress</button>
+          <button id="delDeck" class="danger">Delete deck</button>
+        </div>
+      </details>
+    </div>
+    <div class="progline">
+      <span id="cnt"></span>
+      <span id="dueInfo"></span>
+    </div>
+
+    <div id="card">
+      <div id="inner">
+        <div class="face" id="faceF">
+          <span class="tag">Question</span>
+          <button class="spk" data-speak="front" title="Read aloud">🔊</button>
+          <span id="front"></span>
+        </div>
+        <div class="face b" id="faceB">
+          <span class="tag">Answer</span>
+          <button class="spk" data-speak="back" title="Read aloud">🔊</button>
+          <span id="back"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="navrow" id="navRow">
+      <button id="prev" class="icon" title="Previous">◀</button>
+      <button id="flip" class="p big">Show answer</button>
+      <button id="next" class="icon" title="Next">▶</button>
+    </div>
+    <div class="ratebar hide" id="rateBar">
+      <button id="rateAgain" class="rate r0">Again<small id="iv0"></small></button>
+      <button id="rateHard"  class="rate r1">Hard<small  id="iv1"></small></button>
+      <button id="rateGood"  class="rate r2">Good<small  id="iv2"></small></button>
+      <button id="rateEasy"  class="rate r3">Easy<small  id="iv3"></small></button>
+    </div>
+
+    <div id="summary" class="hide"></div>
+
+    <div class="ttsbar">
+      <span style="color:var(--mut)">🔊</span>
+      <label for="voice">Voice</label>
+      <select id="voice" style="flex:1;min-width:120px"><option value="">Default</option></select>
+      <label for="rate">Speed</label>
+      <input id="rate" type="range" min="0.5" max="1.6" step="0.05" value="1">
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+        <input type="checkbox" id="autoSpeak"> Auto-read
+      </label>
+    </div>
+
+    <details class="tools">
+      <summary>More tools</summary>
+      <div class="toolgrid">
+        <button id="edit">✏️ Quick edit</button>
+        <button id="openEditor2">📝 Edit all cards</button>
+        <button id="add">➕ Add card</button>
+        <button id="del" class="danger">🗑 Delete card</button>
+        <button id="shuffle">🔀 Shuffle</button>
+        <button id="filterDue">📅 Due only</button>
+        <button id="filterAll">📚 All cards</button>
+        <button id="filterMissed">🔁 Missed</button>
+        <button id="quiz">❓ Quiz</button>
+        <button id="share">🔗 Share link</button>
+        <details class="sub">
+          <summary>⬇ Export deck</summary>
+          <div class="toolgrid">
+            <button id="csv">CSV</button>
+            <button id="anki">Anki .txt</button>
+            <button id="quizlet">Quizlet .txt</button>
+            <button id="notion">Notion .md</button>
+            <button id="printPdf">Print / PDF</button>
+          </div>
+        </details>
+      </div>
+    </details>
+  </div>
+
+  
   <!-- ========== CARD EDITOR ========== -->
   <div id="editView" class="hide">
     <div class="studyhead">
