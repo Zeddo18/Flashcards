@@ -99,6 +99,39 @@ function extractCardArray(raw) {
   return null;
 }
 
+function extractQuizObject(raw) {
+  const text = String(raw || "").replace(/```(?:json)?/gi, "").trim();
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch {}
+
+  for (let start = 0; start < text.length; start++) {
+    if (text[start] !== "{" && text[start] !== "[") continue;
+    const stack = [];
+    let inString = false, escaped = false;
+    for (let end = start; end < text.length; end++) {
+      const char = text[end];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (char === "\\") escaped = true;
+        else if (char === '"') inString = false;
+        continue;
+      }
+      if (char === '"') { inString = true; continue; }
+      if (char === "{" || char === "[") stack.push(char);
+      else if (char === "}" || char === "]") {
+        const open = stack.pop();
+        if ((char === "}" && open !== "{") || (char === "]" && open !== "[")) break;
+        if (!stack.length) {
+          try { return JSON.parse(text.slice(start, end + 1)); } catch { break; }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -200,13 +233,11 @@ module.exports = async (req, res) => {
   }
 
   if (isQuiz) {
-    let parsed;
-    try {
-      const rawText = String(result.text).replace(/```(?:json)?/gi, "").trim();
-      const start = rawText.indexOf("{"), end = rawText.lastIndexOf("}");
-      if (start < 0 || end <= start) throw new Error("Invalid JSON");
-      parsed = JSON.parse(rawText.slice(start, end + 1));
-    } catch { return res.status(502).json({ error: "The AI returned an invalid quiz format. Please try again." }); }
+    let parsed = extractQuizObject(result.text);
+    if (Array.isArray(parsed)) parsed = type === "match" ? { pairs: parsed } : { questions: parsed };
+    if (!parsed || typeof parsed !== "object") {
+      return res.status(502).json({ error: "The AI returned an invalid quiz format. Please try again." });
+    }
     const clean = value => typeof value === "string" ? value.trim().slice(0, 1000) : "";
     if (type === "match") {
       const pairs = Array.isArray(parsed.pairs) ? parsed.pairs.map(p => ({ term: clean(p && p.term), definition: clean(p && p.definition) })).filter(p => p.term && p.definition).slice(0, n) : [];
@@ -215,16 +246,18 @@ module.exports = async (req, res) => {
     }
     const questions = Array.isArray(parsed.questions) ? parsed.questions.map(q => {
       if (!q || typeof q !== "object") return null;
-      const prompt = clean(q.prompt), answer = clean(q.answer);
+      const prompt = clean(q.prompt || q.question || q.clue);
+      const rawItems = Array.isArray(q.items) ? q.items.map(clean).filter(Boolean).slice(0, 12) : [];
+      const answer = clean(q.answer || q.correctAnswer || q.correct) || (type === "enum" ? rawItems.join(", ") : "");
       if (!prompt || !answer) return null;
-      const item = { prompt, correct: answer, explanation: clean(q.explanation) };
+      const item = { prompt, correct: answer, explanation: clean(q.explanation || q.reason) };
       if (type === "mc") {
         let options = Array.isArray(q.options) ? q.options.map(clean).filter(Boolean).slice(0, 4) : [];
         if (!options.some(o => o.toLowerCase() === answer.toLowerCase())) options[0] = answer;
         item.options = [...new Set(options)].slice(0, 4);
       }
       if (type === "enum") {
-        const items = Array.isArray(q.items) ? q.items.map(clean).filter(Boolean).slice(0, 12) : [];
+        const items = rawItems;
         if (items.length < 2) return null;
         item.items = items; item.correct = items.join(", ");
       } else if (Array.isArray(q.acceptedAnswers)) item.acceptedAnswers = q.acceptedAnswers.map(clean).filter(Boolean).slice(0, 8);
