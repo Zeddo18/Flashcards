@@ -592,21 +592,33 @@ details.sub .toolgrid{padding:6px 10px 10px}
   box-shadow:var(--sh);
 }
 .quiz-type-choice:has(input:checked) span{color:var(--acc-fg)}
-.quiz-type-choice input{
+.quiz-type-choice input[type="checkbox"]{
   appearance:none;-webkit-appearance:none;
-  width:22px;height:22px;flex-shrink:0;
-  border:3px solid var(--bd);border-radius:6px;
-  background:var(--panel);margin:0;cursor:pointer;
-  display:grid;place-items:center;
+  width:22px !important;
+  height:22px !important;
+  min-width:22px !important;
+  max-width:22px !important;
+  flex:0 0 22px !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:3px solid var(--bd) !important;
+  border-radius:6px !important;
+  background:var(--panel) !important;
+  box-shadow:none !important;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
   transition:background .1s;
+  position:static;
 }
-.quiz-type-choice input:checked{
-  background:var(--bd);
+.quiz-type-choice input[type="checkbox"]:checked{
+  background:var(--bd) !important;
 }
-.quiz-type-choice input:checked::after{
+.quiz-type-choice input[type="checkbox"]:checked::after{
   content:"";
   display:block;
-  width:6px;height:11px;
+  width:6px;
+  height:11px;
   border:solid var(--panel);
   border-width:0 3px 3px 0;
   transform:rotate(45deg) translate(-1px,-2px);
@@ -626,8 +638,7 @@ details.sub .toolgrid{padding:6px 10px 10px}
 @media(max-width:480px){
   .quiz-type-options{grid-template-columns:1fr 1fr;gap:8px}
   .quiz-type-choice{font-size:.82rem;padding:10px;min-height:52px}
-  .quiz-type-choice input{width:20px;height:20px}
-}
+ .quiz-type-choice input[type="checkbox"]{width:20px !important;height:20px !important;min-width:20px !important;max-width:20px !important;flex:0 0 20px !important}
 #quizTimerDisplay{
   display:inline-block;
   padding:3px 12px;
