@@ -158,7 +158,7 @@ module.exports = async (req, res) => {
 
   const isCards = mode === "flashcards";
   const requested = Math.max(1, parseInt(count, 10) || (isQuiz ? 10 : 20));
-  const n = isQuiz ? Math.min(type === "match" ? 40 : 20, type === "match" ? requested * 4 : requested) : Math.min(Math.max(requested, 5), 40);
+  const n = isQuiz ? Math.min(type === "match" ? 80 : 20, type === "match" ? requested * 4 : requested) : Math.min(Math.max(requested, 5), 40);
   const level = ["concise", "balanced", "detailed"].includes(detail) ? detail : "balanced";
   const diff  = ["beginner", "intermediate", "advanced"].includes(difficulty) ? difficulty : "intermediate";
   const focusTxt = typeof focus === "string" ? focus.trim().slice(0, 400) : "";
