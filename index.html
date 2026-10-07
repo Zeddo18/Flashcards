@@ -1575,7 +1575,7 @@ $("tabCreate").onclick = () => { statusEl.textContent = ""; show("create"); };
 $("tabDecks").onclick  = () => { statusEl.textContent = ""; show("decks"); };
 $("tabNotes").onclick  = () => { statusEl.textContent = ""; show("notesLib"); };
 $("backDecks").onclick = () => show("decks");
-$("quizBack").onclick  = () => show("study");
+$("quizBack").onclick = () => { clearInterval(quizTimerInterval); show("study"); };
 $("noteBack").onclick  = () => show("notesLib");
 $("again").onclick     = () => { statusEl.textContent = ""; show("create"); };
 if (matchMedia("(pointer: coarse)").matches) {
@@ -2993,10 +2993,11 @@ function openQuizSetup() {
     statusEl.textContent = "You need at least 2 cards for a quiz.";
     return;
   }
+  $("quizSetupMsg").textContent = "";                    // ← add this
   $("quizSetupModal").classList.remove("hide");
   setTimeout(() => $("quizTypeChoices").querySelector("input").focus(), 50);
 }
-
+  
 $("quizSetupClose").onclick = () => $("quizSetupModal").classList.add("hide");
 $("quizSetupModal").onclick = e => {
   if (e.target.id === "quizSetupModal") $("quizSetupModal").classList.add("hide");
