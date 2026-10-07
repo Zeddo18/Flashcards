@@ -4,8 +4,8 @@
    - Never caches API calls or Supabase auth
    - Caches Google Fonts + CDN scripts for offline use */
 
-const CACHE  = "flushcard-v3";
-const EXT    = "flushcard-ext-v3";
+const CACHE  = "flushcard-v4";
+const EXT    = "flushcard-ext-v4";
 
 const SHELL = [
   "/",
