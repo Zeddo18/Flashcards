@@ -573,10 +573,49 @@ details.sub .toolgrid{padding:6px 10px 10px}
 .editbar button{flex:1;min-width:140px}
 
 /* ============ QUIZ ============ */
-.quiz-type-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
-.quiz-type-choice{display:flex;align-items:center;gap:8px;padding:9px 10px;border:2px solid var(--bd);border-radius:var(--r);background:var(--panel);cursor:pointer}
-.quiz-type-choice:has(input:checked){background:var(--panel2);box-shadow:2px 2px 0 var(--bd)}
-.quiz-type-choice input{width:18px;height:18px;accent-color:var(--bad);margin:0}
+.quiz-type-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.quiz-type-choice{
+  position:relative;
+  display:flex;align-items:center;gap:10px;
+  padding:14px 14px;
+  border:3px solid var(--bd);border-radius:var(--r);
+  background:var(--panel);cursor:pointer;
+  font-size:.9rem;font-weight:700;
+  text-transform:none;letter-spacing:0;color:var(--fg);
+  box-shadow:var(--sh-sm);
+  transition:transform .1s, box-shadow .1s, background .1s;
+  min-height:56px;
+}
+.quiz-type-choice:hover{transform:translate(-2px,-2px);box-shadow:var(--sh);background:var(--panel2)}
+.quiz-type-choice:has(input:checked){
+  background:var(--acc);color:var(--acc-fg);
+  box-shadow:var(--sh);
+}
+.quiz-type-choice:has(input:checked) span{color:var(--acc-fg)}
+.quiz-type-choice input{
+  appearance:none;-webkit-appearance:none;
+  width:22px;height:22px;flex-shrink:0;
+  border:3px solid var(--bd);border-radius:6px;
+  background:var(--panel);margin:0;cursor:pointer;
+  display:grid;place-items:center;
+  transition:background .1s;
+}
+.quiz-type-choice input:checked{
+  background:var(--bd);
+}
+.quiz-type-choice input:checked::after{
+  content:"";
+  display:block;
+  width:6px;height:11px;
+  border:solid var(--panel);
+  border-width:0 3px 3px 0;
+  transform:rotate(45deg) translate(-1px,-2px);
+}
+.quiz-type-choice span{
+  flex:1;min-width:0;
+  line-height:1.25;
+  word-break:break-word;
+}
 .quiz-custom-input{width:100%;margin-top:8px}
 .quiz-loading{position:fixed;inset:0;z-index:1200;background:rgba(17,17,17,.62);display:grid;place-items:center;padding:20px}
 .quiz-loading-card{width:min(440px,100%);padding:28px;border:3px solid var(--bd);border-radius:var(--r2);background:var(--panel);box-shadow:8px 8px 0 var(--bd);text-align:center}
@@ -584,7 +623,30 @@ details.sub .toolgrid{padding:6px 10px 10px}
 .quiz-loading-card p{margin:4px 0;color:var(--mut)}
 .quiz-spinner{width:46px;height:46px;border:5px solid var(--panel2);border-top-color:var(--bad);border-radius:50%;margin:auto;animation:quizSpin .8s linear infinite}
 @keyframes quizSpin{to{transform:rotate(360deg)}}
-@media(max-width:480px){.quiz-type-options{grid-template-columns:1fr 1fr}.quiz-type-choice{font-size:.82rem;padding:8px}}
+@media(max-width:480px){
+  .quiz-type-options{grid-template-columns:1fr 1fr;gap:8px}
+  .quiz-type-choice{font-size:.82rem;padding:10px;min-height:52px}
+  .quiz-type-choice input{width:20px;height:20px}
+}
+#quizTimerDisplay{
+  display:inline-block;
+  padding:3px 12px;
+  border-radius:999px;
+  transition:color .2s, background .2s, transform .2s;
+  font-variant-numeric:tabular-nums;
+}
+#quizTimerDisplay.quiz-timer-warn{
+  color:#8B5A00;background:#FFE8C7;font-weight:800;
+  animation:quizTimerPulse 1s ease-in-out infinite;
+}
+#quizTimerDisplay.quiz-timer-danger{
+  color:#FFFFFF;background:var(--bad);font-weight:800;
+  animation:quizTimerPulse .55s ease-in-out infinite;
+}
+@keyframes quizTimerPulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.15)}
+}
 #qbox{padding:8px 0}
 #qbox h3{font-size:1.15rem;margin:0 0 20px;font-weight:700;line-height:1.4}
 .qopt{
@@ -1457,7 +1519,6 @@ button,select,input,textarea,label{touch-action:manipulation}
   };
   window.BroadcastChannel.prototype = Original.prototype;
 })();
-</script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2993,11 +3054,11 @@ function openQuizSetup() {
     statusEl.textContent = "You need at least 2 cards for a quiz.";
     return;
   }
-  $("quizSetupMsg").textContent = "";                    // ← add this
+  $("quizSetupMsg").textContent = "";
   $("quizSetupModal").classList.remove("hide");
   setTimeout(() => $("quizTypeChoices").querySelector("input").focus(), 50);
 }
-  
+
 $("quizSetupClose").onclick = () => $("quizSetupModal").classList.add("hide");
 $("quizSetupModal").onclick = e => {
   if (e.target.id === "quizSetupModal") $("quizSetupModal").classList.add("hide");
@@ -3111,15 +3172,39 @@ function startQuiz(type, timerSec, questions, types) {
   renderQuizQuestion();
 }
 
+function playTickSound(urgent) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!quizAudioContext) quizAudioContext = new AudioCtx();
+    if (quizAudioContext.state === "suspended") quizAudioContext.resume();
+    const ctx = quizAudioContext;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = urgent ? "square" : "sine";
+    osc.frequency.setValueAtTime(urgent ? 1200 : 880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(urgent ? 0.06 : 0.04, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  } catch {}
+}
+
 function startQuizTimer(sec) {
   let left = sec;
-  $("quizTimerDisplay").textContent = left + "s left";
+  const display = $("quizTimerDisplay");
+  display.textContent = left + "s left";
+  display.classList.remove("quiz-timer-warn", "quiz-timer-danger");
   clearInterval(quizTimerInterval);
   quizTimerInterval = setInterval(() => {
     left--;
     if (left <= 0) {
       clearInterval(quizTimerInterval);
-      $("quizTimerDisplay").textContent = "Time up";
+      display.textContent = "Time up";
+      display.classList.remove("quiz-timer-warn", "quiz-timer-danger");
       if (quizState && (quizState.questions[quizState.idx]?.type || quizState.type) === "match") {
         submitMatch({});
       } else {
@@ -3127,7 +3212,10 @@ function startQuizTimer(sec) {
       }
       return;
     }
-    $("quizTimerDisplay").textContent = left + "s left";
+    display.textContent = left + "s left";
+    display.classList.toggle("quiz-timer-warn", left <= 15 && left > 10);
+    display.classList.toggle("quiz-timer-danger", left <= 10);
+    if (left <= 10) playTickSound(left <= 5);
   }, 1000);
 }
 
@@ -3136,7 +3224,9 @@ function renderQuizQuestion() {
   if (!s) return;
 
   clearInterval(quizTimerInterval);
-  $("quizTimerDisplay").textContent = "";
+  const timerEl = $("quizTimerDisplay");
+  timerEl.textContent = "";
+  timerEl.classList.remove("quiz-timer-warn", "quiz-timer-danger");
 
   if (s.idx >= s.questions.length) return endQuiz();
 
@@ -3437,6 +3527,7 @@ function endQuiz() {
   $("quizTitle").textContent = "Quiz results";
   $("quizProg").textContent = "Complete";
   $("quizTimerDisplay").textContent = "";
+  $("quizTimerDisplay").classList.remove("quiz-timer-warn", "quiz-timer-danger");
   $("quizProgFill").style.width = "100%";
   $("quizScoreLive").textContent = "Score: " + s.score + " / " + total;
 
@@ -3684,4 +3775,3 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
-  
