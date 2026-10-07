@@ -573,6 +573,18 @@ details.sub .toolgrid{padding:6px 10px 10px}
 .editbar button{flex:1;min-width:140px}
 
 /* ============ QUIZ ============ */
+.quiz-type-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.quiz-type-choice{display:flex;align-items:center;gap:8px;padding:9px 10px;border:2px solid var(--bd);border-radius:var(--r);background:var(--panel);cursor:pointer}
+.quiz-type-choice:has(input:checked){background:var(--panel2);box-shadow:2px 2px 0 var(--bd)}
+.quiz-type-choice input{width:18px;height:18px;accent-color:var(--bad);margin:0}
+.quiz-custom-input{width:100%;margin-top:8px}
+.quiz-loading{position:fixed;inset:0;z-index:1200;background:rgba(17,17,17,.62);display:grid;place-items:center;padding:20px}
+.quiz-loading-card{width:min(440px,100%);padding:28px;border:3px solid var(--bd);border-radius:var(--r2);background:var(--panel);box-shadow:8px 8px 0 var(--bd);text-align:center}
+.quiz-loading-card h2{margin:14px 0 6px}
+.quiz-loading-card p{margin:4px 0;color:var(--mut)}
+.quiz-spinner{width:46px;height:46px;border:5px solid var(--panel2);border-top-color:var(--bad);border-radius:50%;margin:auto;animation:quizSpin .8s linear infinite}
+@keyframes quizSpin{to{transform:rotate(360deg)}}
+@media(max-width:480px){.quiz-type-options{grid-template-columns:1fr 1fr}.quiz-type-choice{font-size:.82rem;padding:8px}}
 #qbox{padding:8px 0}
 #qbox h3{font-size:1.15rem;margin:0 0 20px;font-weight:700;line-height:1.4}
 .qopt{
@@ -1349,26 +1361,28 @@ button,select,input,textarea,label{touch-action:manipulation}
     <p id="quizSetupMsg" class="sub" role="status" aria-live="polite"></p>
 
     <div class="field" style="margin-bottom:14px">
-      <label for="quizType">Quiz type</label>
-      <select id="quizType">
-        <option value="mc">Multiple choice</option>
-        <option value="tf">True / False</option>
-        <option value="fib">Fill in the blank</option>
-        <option value="typing">Typing</option>
-        <option value="ident">Identification</option>
-        <option value="enum">Enumeration</option>
-        <option value="match">Matching type</option>
-      </select>
+      <label>Quiz types (choose one or more)</label>
+      <div id="quizTypeChoices" class="quiz-type-options">
+        <label class="quiz-type-choice"><input type="checkbox" value="mc" checked><span>Multiple choice</span></label>
+        <label class="quiz-type-choice"><input type="checkbox" value="tf"><span>True / False</span></label>
+        <label class="quiz-type-choice"><input type="checkbox" value="fib"><span>Fill in the blank</span></label>
+        <label class="quiz-type-choice"><input type="checkbox" value="typing"><span>Typing</span></label>
+        <label class="quiz-type-choice"><input type="checkbox" value="ident"><span>Identification</span></label>
+        <label class="quiz-type-choice"><input type="checkbox" value="enum"><span>Enumeration</span></label>
+        <label class="quiz-type-choice"><input type="checkbox" value="match"><span>Matching type</span></label>
+      </div>
     </div>
 
     <div class="field" style="margin-bottom:14px">
       <label for="quizCount">Number of questions</label>
       <select id="quizCount">
-        <option>5</option>
-        <option selected>10</option>
-        <option>15</option>
-        <option>20</option>
+        <option value="5">5</option>
+        <option value="10" selected>10</option>
+        <option value="15">15</option>
+        <option value="20">20</option>
+        <option value="custom">Custom…</option>
       </select>
+      <input id="quizCustomCount" class="quiz-custom-input hide" type="number" min="1" max="20" step="1" value="10" aria-label="Custom number of questions">
     </div>
 
     <div class="field" style="margin-bottom:20px">
@@ -1377,10 +1391,21 @@ button,select,input,textarea,label{touch-action:manipulation}
         <option value="0" selected>No timer</option>
         <option value="30">30 seconds</option>
         <option value="60">60 seconds</option>
+        <option value="custom">Custom…</option>
       </select>
+      <input id="quizCustomTimer" class="quiz-custom-input hide" type="number" min="5" max="600" step="5" value="30" aria-label="Custom seconds per question">
     </div>
 
     <button id="quizStartBtn" class="p big" type="button">Start quiz</button>
+  </div>
+</div>
+
+<div id="quizLoading" class="quiz-loading hide" role="status" aria-live="polite">
+  <div class="quiz-loading-card">
+    <div class="quiz-spinner" aria-hidden="true"></div>
+    <h2>Preparing your quiz</h2>
+    <p id="quizLoadingMsg">Creating questions from your deck…</p>
+    <p>This can take a little while. Please keep this page open.</p>
   </div>
 </div>
 
@@ -2883,7 +2908,8 @@ function quizTypeLabel(t) {
     typing: "Typing",
     ident: "Identification",
     enum: "Enumeration",
-    match: "Matching type"
+    match: "Matching type",
+    mixed: "Mixed formats"
   }[t] || "Quiz";
 }
 
@@ -2934,13 +2960,21 @@ function buildQuestion(type, card, pool) {
     return { card, prompt, correct };
   }
   if (type === "tf") {
+    const explicit = String(card.back).match(/^\s*(true|false)\b\s*[:.!—–-]?\s*(.*)$/i);
+    if (explicit) {
+      return {
+        card, type: "tf", prompt: card.front,
+        correct: explicit[1].toLowerCase() === "true" ? "True" : "False",
+        explanation: explicit[2].trim()
+      };
+    }
     const makeFalse = Math.random() < 0.5 && pool.length > 1;
     if (makeFalse) {
       const others = pool.filter(c => c.back !== card.back);
       const other = others[Math.floor(Math.random() * others.length)];
-      return { card, prompt: card.front + "  ->  " + other.back, correct: "False" };
+      return { card, type: "tf", prompt: card.front + "  ->  " + other.back, correct: "False" };
     }
-    return { card, prompt: card.front + "  ->  " + card.back, correct: "True" };
+    return { card, type: "tf", prompt: card.front + "  ->  " + card.back, correct: "True" };
   }
   if (type === "ident") {
     return { card, prompt: card.front, correct: card.back };
@@ -2960,49 +2994,89 @@ function openQuizSetup() {
     return;
   }
   $("quizSetupModal").classList.remove("hide");
-  setTimeout(() => $("quizType").focus(), 50);
+  setTimeout(() => $("quizTypeChoices").querySelector("input").focus(), 50);
 }
 
 $("quizSetupClose").onclick = () => $("quizSetupModal").classList.add("hide");
 $("quizSetupModal").onclick = e => {
   if (e.target.id === "quizSetupModal") $("quizSetupModal").classList.add("hide");
 };
+$("quizCount").onchange = () => $("quizCustomCount").classList.toggle("hide", $("quizCount").value !== "custom");
+$("quizTimer").onchange = () => $("quizCustomTimer").classList.toggle("hide", $("quizTimer").value !== "custom");
+
+function selectedQuizTypes() {
+  return [...$("quizTypeChoices").querySelectorAll('input[type="checkbox"]:checked')].map(input => input.value);
+}
+
 $("quizStartBtn").onclick = async () => {
-  const type = $("quizType").value;
-  const count = parseInt($("quizCount").value, 10) || 10;
-  const timer = parseInt($("quizTimer").value, 10) || 0;
+  const types = selectedQuizTypes();
+  const rawCount = $("quizCount").value === "custom" ? $("quizCustomCount").value : $("quizCount").value;
+  const rawTimer = $("quizTimer").value === "custom" ? $("quizCustomTimer").value : $("quizTimer").value;
+  const count = Math.min(20, Math.max(1, parseInt(rawCount, 10) || 10));
+  const timer = Math.min(600, Math.max(0, parseInt(rawTimer, 10) || 0));
   const button = $("quizStartBtn"), message = $("quizSetupMsg");
+  if (!types.length) { message.textContent = "Choose at least one quiz type."; return; }
+  if (count < types.length) { message.textContent = "Choose at least " + types.length + " questions to include every selected type."; return; }
+
   button.disabled = true;
   button.textContent = "Preparing quiz…";
-  message.textContent = type === "tf" ? "" : "Creating questions from your deck…";
+  $("quizLoadingMsg").textContent = "Preparing " + count + " questions…";
+  $("quizLoading").classList.remove("hide");
   try {
-    const questions = type === "tf"
-      ? cur.cards.filter(c => c.front && c.back).slice().sort(() => Math.random() - .5)
-          .slice(0, count).map(c => buildQuestion("tf", c, cur.cards))
-      : await generateQuizQuestions(type, count);
+    const questions = await prepareQuizQuestions(types, count);
     $("quizSetupModal").classList.add("hide");
     message.textContent = "";
-    startQuiz(type, count, timer, questions);
+    startQuiz(types.length > 1 ? "mixed" : types[0], timer, questions, types);
   } catch (error) {
     message.textContent = error.message || "Could not prepare this quiz. Please try again.";
   } finally {
+    $("quizLoading").classList.add("hide");
     button.disabled = false;
     button.textContent = "Start quiz";
   }
 };
 
+async function prepareQuizQuestions(types, count) {
+  const pool = cur.cards.filter(c => c.front && c.back);
+  const questions = [];
+  const base = Math.floor(count / types.length), remainder = count % types.length;
+  for (let i = 0; i < types.length; i++) {
+    const type = types[i], typeCount = base + (i < remainder ? 1 : 0);
+    $("quizLoadingMsg").textContent = "Creating " + quizTypeLabel(type) + " questions (" + (i + 1) + " of " + types.length + ")…";
+    if (type === "tf") {
+      const chosen = pool.slice().sort(() => Math.random() - .5).slice(0, typeCount);
+      questions.push(...chosen.map(card => buildQuestion("tf", card, pool)));
+    } else {
+      const generated = await generateQuizQuestions(type, typeCount);
+      questions.push(...generated.map(question => ({ ...question, type })));
+    }
+  }
+  if (!questions.length) throw new Error("No questions were created.");
+  return questions.sort(() => Math.random() - .5);
+}
 async function generateQuizQuestions(type, count) {
   const cards = cur.cards.filter(c => c.front && c.back);
-  const response = await fetch("/api/notes", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      mode: "quiz",
-      type,
-      count,
-      text: JSON.stringify(cards.map(c => ({ front: c.front, back: c.back })))
-    })
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 50000);
+  let response;
+  try {
+    response = await fetch("/api/notes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        mode: "quiz",
+        type,
+        count,
+        text: JSON.stringify(cards.map(c => ({ front: c.front, back: c.back })))
+      })
+    });
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("Quiz generation timed out. Try fewer quiz types or fewer questions.");
+    throw new Error("Could not reach the quiz service. Check your connection and try again.");
+  } finally {
+    clearTimeout(timeout);
+  }
   let data;
   try { data = await response.json(); } catch { data = {}; }
   if (!response.ok) throw new Error(data.error || "Could not generate quiz questions.");
@@ -3026,8 +3100,8 @@ async function generateQuizQuestions(type, count) {
   return questions;
 }
 
-function startQuiz(type, count, timerSec, questions) {
-  quizState = { type, timerSec, questions, idx: 0, score: 0, answers: [] };
+function startQuiz(type, timerSec, questions, types) {
+  quizState = { type, types, timerSec, questions, idx: 0, score: 0, answers: [] };
 
   $("quizTitle").textContent = "Quiz — " + quizTypeLabel(type);
   $("quizScoreLive").textContent = "Score: 0";
@@ -3045,7 +3119,7 @@ function startQuizTimer(sec) {
     if (left <= 0) {
       clearInterval(quizTimerInterval);
       $("quizTimerDisplay").textContent = "Time up";
-      if (quizState && quizState.type === "match") {
+      if (quizState && (quizState.questions[quizState.idx]?.type || quizState.type) === "match") {
         submitMatch({});
       } else {
         submitAnswer("(no answer)", false);
@@ -3066,6 +3140,7 @@ function renderQuizQuestion() {
   if (s.idx >= s.questions.length) return endQuiz();
 
   const q = s.questions[s.idx];
+  const type = q.type || s.type;
   const box = $("qbox");
   box.innerHTML = "";
 
@@ -3074,7 +3149,7 @@ function renderQuizQuestion() {
   $("quizProgFill").style.width = ((s.idx / s.questions.length) * 100) + "%";
 
   // ---- Matching ----
-  if (s.type === "match") {
+  if (type === "match") {
     const qCard = document.createElement("div");
     qCard.className = "quiz-q";
     const qLabel = document.createElement("div");
@@ -3123,10 +3198,10 @@ function renderQuizQuestion() {
   const qLabel = document.createElement("div");
   qLabel.className = "quiz-q-label";
   qLabel.textContent =
-    s.type === "tf"  ? "True or false?" :
-    s.type === "fib" ? "Fill in the blank" :
-    s.type === "ident" ? "Identification — type the term or answer" :
-    s.type === "enum" ? "Enumeration — list all items" :
+    type === "tf"  ? "True or false?" :
+    type === "fib" ? "Fill in the blank" :
+    type === "ident" ? "Identification — type the term or answer" :
+    type === "enum" ? "Enumeration — list all items" :
     "Question";
   const qText = document.createElement("div");
   qText.className = "quiz-q-text";
@@ -3137,7 +3212,7 @@ function renderQuizQuestion() {
   const answerBox = document.createElement("div");
   answerBox.className = "quiz-answer";
 
-  if (s.type === "mc") {
+  if (type === "mc") {
     q.options.forEach(opt => {
       const b = document.createElement("button");
       b.className = "qopt";
@@ -3145,7 +3220,7 @@ function renderQuizQuestion() {
       b.onclick = () => submitAnswer(opt, opt === q.correct);
       answerBox.appendChild(b);
     });
-  } else if (s.type === "tf") {
+  } else if (type === "tf") {
     const wrap = document.createElement("div");
     wrap.className = "quiz-tf";
     const bT = document.createElement("button");
@@ -3156,7 +3231,7 @@ function renderQuizQuestion() {
     bF.onclick = () => submitAnswer("False", q.correct === "False");
     wrap.append(bT, bF);
     answerBox.appendChild(wrap);
-  } else if (s.type === "enum") {
+  } else if (type === "enum") {
     const hint = document.createElement("div");
     hint.className = "quiz-enum-hint";
     hint.textContent = "Type each item separated by commas or new lines.";
@@ -3200,8 +3275,8 @@ function renderQuizQuestion() {
     input.type = "text";
     input.className = "quiz-input";
     input.placeholder =
-      s.type === "fib" ? "Type the missing word…" :
-      s.type === "ident" ? "Type the term…" :
+      type === "fib" ? "Type the missing word…" :
+      type === "ident" ? "Type the term…" :
       "Type your answer…";
     input.autocomplete = "off";
     input.autocapitalize = "off";
@@ -3227,28 +3302,60 @@ function renderQuizQuestion() {
   if (s.timerSec > 0) startQuizTimer(s.timerSec);
 }
 
+let quizAudioContext = null;
+function playQuizSound(correct) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!quizAudioContext) quizAudioContext = new AudioCtx();
+    if (quizAudioContext.state === "suspended") quizAudioContext.resume();
+    const ctx = quizAudioContext;
+    const notes = correct ? [660, 880] : [220, 165];
+    notes.forEach((frequency, index) => {
+      const start = ctx.currentTime + index * (correct ? 0.11 : 0.13);
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = correct ? "sine" : "triangle";
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.08, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.12);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.13);
+    });
+  } catch {}
+}
+
 function submitAnswer(userAnswer, isCorrect, customNote, customEl) {
   const s = quizState;
   if (!s) return;
   clearInterval(quizTimerInterval);
 
   const q = s.questions[s.idx];
+  const type = q.type || s.type;
+  playQuizSound(!!isCorrect);
   s.answers.push({ question: q, userAnswer: String(userAnswer), correct: !!isCorrect });
   if (isCorrect) s.score++;
 
   const box = $("qbox");
   box.querySelectorAll("button, input, textarea, select").forEach(el => el.disabled = true);
 
-  if (s.type === "mc") {
+  if (type === "mc") {
     box.querySelectorAll(".qopt").forEach(b => {
       if (b.textContent === q.correct) b.classList.add("ok");
       else if (b.textContent === userAnswer && !isCorrect) b.classList.add("no");
     });
-  } else if (s.type === "tf") {
+  } else if (type === "tf") {
     box.querySelectorAll(".quiz-tf button").forEach(b => {
       if (b.textContent === q.correct) b.classList.add("ok");
       else if (b.textContent === userAnswer && !isCorrect) b.classList.add("no");
     });
+    const fb = document.createElement("div");
+    fb.className = "quiz-feedback " + (isCorrect ? "ok" : "no");
+    fb.textContent = (isCorrect ? "Correct!" : "Correct answer: " + q.correct) + (q.explanation ? " — " + q.explanation : "");
+    box.appendChild(fb);
   } else {
     const fb = document.createElement("div");
     fb.className = "quiz-feedback " + (isCorrect ? "ok" : "no");
@@ -3293,6 +3400,7 @@ function submitMatch(state) {
   const totalPairs = q.lefts.length;
   const fullCredit = correctPairs === totalPairs;
   if (fullCredit) s.score++;
+  playQuizSound(fullCredit);
 
   s.answers.push({
     question: { prompt: "Matching set (" + totalPairs + " pairs)", correct: totalPairs + " correct pairs" },
