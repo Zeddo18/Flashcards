@@ -1345,7 +1345,8 @@ button,select,input,textarea,label{touch-action:manipulation}
   <div class="modal-card">
     <button class="modal-x" id="quizSetupClose" type="button">X</button>
     <h2>Quiz setup</h2>
-    <p class="sub">Pick how you want to be tested on this deck.</p>
+    <p class="sub">Choose a format. AI will create questions that fit it.</p>
+    <p id="quizSetupMsg" class="sub" role="status" aria-live="polite"></p>
 
     <div class="field" style="margin-bottom:14px">
       <label for="quizType">Quiz type</label>
@@ -2966,35 +2967,66 @@ $("quizSetupClose").onclick = () => $("quizSetupModal").classList.add("hide");
 $("quizSetupModal").onclick = e => {
   if (e.target.id === "quizSetupModal") $("quizSetupModal").classList.add("hide");
 };
-$("quizStartBtn").onclick = () => {
+$("quizStartBtn").onclick = async () => {
   const type = $("quizType").value;
   const count = parseInt($("quizCount").value, 10) || 10;
   const timer = parseInt($("quizTimer").value, 10) || 0;
-  $("quizSetupModal").classList.add("hide");
-  startQuiz(type, count, timer);
+  const button = $("quizStartBtn"), message = $("quizSetupMsg");
+  button.disabled = true;
+  button.textContent = "Preparing quiz…";
+  message.textContent = type === "tf" ? "" : "Creating questions from your deck…";
+  try {
+    const questions = type === "tf"
+      ? cur.cards.filter(c => c.front && c.back).slice().sort(() => Math.random() - .5)
+          .slice(0, count).map(c => buildQuestion("tf", c, cur.cards))
+      : await generateQuizQuestions(type, count);
+    $("quizSetupModal").classList.add("hide");
+    message.textContent = "";
+    startQuiz(type, count, timer, questions);
+  } catch (error) {
+    message.textContent = error.message || "Could not prepare this quiz. Please try again.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Start quiz";
+  }
 };
 
-function startQuiz(type, count, timerSec) {
-  const pool = cur.cards.filter(c => c.front && c.back);
-  const shuffled = pool.slice().sort(() => Math.random() - .5);
-
-  let questions = [];
-
+async function generateQuizQuestions(type, count) {
+  const cards = cur.cards.filter(c => c.front && c.back);
+  const response = await fetch("/api/notes", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      mode: "quiz",
+      type,
+      count,
+      text: JSON.stringify(cards.map(c => ({ front: c.front, back: c.back })))
+    })
+  });
+  let data;
+  try { data = await response.json(); } catch { data = {}; }
+  if (!response.ok) throw new Error(data.error || "Could not generate quiz questions.");
   if (type === "match") {
-    const groupSize = Math.min(4, pool.length);
-    const groupCount = Math.max(1, Math.min(count, Math.floor(pool.length / groupSize) || 1));
-    for (let g = 0; g < groupCount && g * groupSize < shuffled.length; g++) {
-      const chunk = shuffled.slice(g * groupSize, (g + 1) * groupSize);
-      if (chunk.length < 2) break;
-      const lefts = chunk.map(c => ({ id: c.id, text: c.front }));
-      const rights = chunk.map(c => ({ id: c.id, text: c.back })).sort(() => Math.random() - .5);
-      questions.push({ type: "match", pairs: chunk, lefts, rights });
+    const pairs = Array.isArray(data.pairs) ? data.pairs : [];
+    const shuffled = pairs.slice().sort(() => Math.random() - .5);
+    const sets = [];
+    for (let i = 0; i < shuffled.length; i += 4) {
+      const chunk = shuffled.slice(i, i + 4);
+      if (chunk.length < 2) continue;
+      const lefts = chunk.map((p, index) => ({ id: "pair-" + i + "-" + index, text: p.term }));
+      const rights = chunk.map((p, index) => ({ id: lefts[index].id, text: p.definition }))
+        .sort(() => Math.random() - .5);
+      sets.push({ lefts, rights });
     }
-  } else {
-    const chosen = shuffled.slice(0, Math.min(count, pool.length));
-    questions = chosen.map(c => buildQuestion(type, c, pool));
+    if (!sets.length) throw new Error("Not enough matching pairs were generated.");
+    return sets;
   }
+  const questions = Array.isArray(data.questions) ? data.questions : [];
+  if (!questions.length) throw new Error("No questions were generated from this deck.");
+  return questions;
+}
 
+function startQuiz(type, count, timerSec, questions) {
   quizState = { type, timerSec, questions, idx: 0, score: 0, answers: [] };
 
   $("quizTitle").textContent = "Quiz — " + quizTypeLabel(type);
@@ -3180,7 +3212,8 @@ function renderQuizQuestion() {
     submit.onclick = () => {
       const val = input.value.trim();
       if (!val) return;
-      const correct = normalizeAnswer(val) === normalizeAnswer(q.correct);
+      const accepted = [q.correct, ...(q.acceptedAnswers || [])].map(normalizeAnswer);
+      const correct = accepted.includes(normalizeAnswer(val));
       submitAnswer(val, correct);
     };
     input.addEventListener("keydown", e => {
@@ -3220,8 +3253,8 @@ function submitAnswer(userAnswer, isCorrect, customNote, customEl) {
     const fb = document.createElement("div");
     fb.className = "quiz-feedback " + (isCorrect ? "ok" : "no");
     fb.textContent = customNote
-      ? customNote
-      : (isCorrect ? "Correct!" : "Correct answer: " + q.correct);
+      ? customNote + (!isCorrect && q.explanation ? " — " + q.explanation : "")
+      : (isCorrect ? "Correct!" : "Correct answer: " + q.correct) + (q.explanation ? " — " + q.explanation : "");
     box.appendChild(fb);
     if (customEl) box.appendChild(customEl);
   }
