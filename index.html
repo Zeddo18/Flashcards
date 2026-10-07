@@ -482,7 +482,6 @@ label{font-weight:600;font-size:.9rem}
   display:flex;flex-direction:column;gap:16px;
 }
 
-/* summary */
 #summary{
   text-align:center;padding:40px 24px;
   border:3px solid var(--bd);border-radius:var(--r2);
@@ -685,7 +684,6 @@ details.menu>summary:hover{transform:translate(-1px,-1px);box-shadow:var(--sh);b
 }
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes popIn{from{transform:scale(.94) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
-@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .modal-card{
   margin:auto;
   background:var(--panel);
@@ -802,6 +800,117 @@ details.menu>summary:hover{transform:translate(-1px,-1px);box-shadow:var(--sh);b
   box-shadow:2px 2px 0 var(--bd);
 }
 
+/* ============ QUIZ ENHANCED ============ */
+.quiz-q{
+  border:3px solid var(--bd);border-radius:var(--r2);
+  background:var(--panel);
+  padding:26px 24px;
+  box-shadow:var(--sh);
+  margin-bottom:20px;
+}
+.quiz-q-label{
+  font-size:.72rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--mut);
+  margin-bottom:10px;
+}
+.quiz-q-text{
+  font-size:1.35rem;font-weight:600;line-height:1.4;
+  word-break:break-word;
+}
+.quiz-answer{display:flex;flex-direction:column;gap:10px}
+.quiz-tf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.quiz-tf button{padding:20px;font-size:1.1rem}
+.quiz-input{
+  width:100%;padding:16px 20px;
+  font-size:1.1rem;font-weight:600;
+  border:3px solid var(--bd);border-radius:var(--r);
+  background:var(--panel);
+  box-shadow:var(--sh-inset);
+}
+.quiz-input:focus{outline:none;box-shadow:var(--sh-sm)}
+.quiz-feedback{
+  margin-top:16px;padding:14px 18px;
+  border:3px solid var(--bd);border-radius:var(--r);
+  font-weight:700;
+  box-shadow:var(--sh-sm);
+}
+.quiz-feedback.ok{background:#DEFFF4;color:#006B4D}
+.quiz-feedback.no{background:#FFD5D8;color:#9B1B2A}
+.quiz-score-card{
+  text-align:center;padding:36px 24px;
+  border:3px solid var(--bd);border-radius:var(--r2);
+  background:var(--panel);
+  box-shadow:var(--sh-lg);
+  margin-bottom:24px;
+}
+.quiz-score-pct{
+  font-size:4rem;font-weight:700;line-height:1;
+  letter-spacing:-.04em;
+  margin-bottom:8px;
+}
+.quiz-score-line{font-size:1.05rem;font-weight:600;color:var(--fg)}
+.quiz-score-sub{font-size:.85rem;font-weight:600;color:var(--mut);margin-top:8px;text-transform:uppercase;letter-spacing:.05em}
+.quiz-review{display:flex;flex-direction:column;gap:10px}
+.quiz-review-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 16px;
+  border:3px solid var(--bd);border-radius:var(--r);
+  background:var(--panel);
+  box-shadow:2px 2px 0 var(--bd);
+}
+.quiz-review-item.ok{background:#F0FFF8}
+.quiz-review-item.no{background:#FFF0F2}
+.quiz-review-num{
+  font-weight:700;font-size:.85rem;flex-shrink:0;
+  padding:4px 10px;border-radius:999px;
+  border:2px solid var(--bd);
+  background:var(--panel);
+}
+.quiz-review-item.ok .quiz-review-num{background:#DEFFF4;color:#006B4D}
+.quiz-review-item.no .quiz-review-num{background:#FFD5D8;color:#9B1B2A}
+.quiz-review-body{flex:1;min-width:0}
+.quiz-review-q{font-weight:600;margin-bottom:4px;word-break:break-word}
+.quiz-review-a{font-size:.88rem;color:var(--mut);font-weight:500}
+.quiz-review-a .wrong{color:#9B1B2A;font-weight:700;text-decoration:line-through}
+.quiz-review-a .right{color:#006B4D;font-weight:700}
+#quizScoreLive{background:var(--acc);color:var(--acc-fg)}
+
+.quiz-enum-input{
+  width:100%;min-height:110px;padding:14px 16px;
+  font:inherit;font-size:1rem;font-weight:600;
+  border:3px solid var(--bd);border-radius:var(--r);
+  background:var(--panel);resize:vertical;
+  box-shadow:var(--sh-inset);
+}
+.quiz-enum-input:focus{outline:none;box-shadow:var(--sh-sm)}
+.quiz-enum-hint{
+  font-size:.82rem;color:var(--mut);font-weight:600;
+  margin-top:6px;margin-bottom:14px;
+}
+.quiz-enum-result{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.quiz-enum-pill{
+  padding:4px 12px;border-radius:999px;
+  border:2px solid var(--bd);font-size:.82rem;font-weight:700;
+}
+.quiz-enum-pill.ok{background:#DEFFF4;color:#006B4D}
+.quiz-enum-pill.miss{background:#FFD5D8;color:#9B1B2A}
+
+.quiz-match-list{display:flex;flex-direction:column;gap:12px}
+.quiz-match-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;
+  padding:12px 14px;
+  border:3px solid var(--bd);border-radius:var(--r);
+  background:var(--panel);
+  box-shadow:2px 2px 0 var(--bd);
+}
+.quiz-match-row.ok{background:#F0FFF8}
+.quiz-match-row.no{background:#FFF0F2}
+.quiz-match-q{font-weight:600;line-height:1.35;word-break:break-word}
+.quiz-match-row select{
+  padding:10px 14px;font-size:.95rem;font-weight:600;
+  width:100%;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width:700px){
   .wrap{padding:16px 14px 60px}
@@ -848,6 +957,7 @@ details.menu>summary:hover{transform:translate(-1px,-1px);box-shadow:var(--sh);b
   .panel{padding:16px;border-radius:var(--r)}
   #todayBox{padding:16px}
   .acct-av{width:52px;height:52px;font-size:1.3rem}
+  .quiz-match-row{grid-template-columns:1fr;gap:8px}
 }
 @media (max-width:420px){
   .decks-head{grid-template-columns:1fr}
@@ -887,7 +997,6 @@ button,select,input,textarea,label{touch-action:manipulation}
 
   <div id="status"></div>
 
-
   <!-- ========== CREATE ========== -->
   <div id="createView">
     <div class="source-tabs" id="sourceTabs">
@@ -897,7 +1006,6 @@ button,select,input,textarea,label{touch-action:manipulation}
     </div>
 
     <div class="create-grid">
-      <!-- LEFT: source -->
       <div>
         <div class="src-panel" id="pdfSrc">
           <div id="drop" tabindex="0" role="button" aria-label="Drop files here">
@@ -931,7 +1039,6 @@ button,select,input,textarea,label{touch-action:manipulation}
         </div>
       </div>
 
-      <!-- RIGHT: settings -->
       <div>
         <div class="panel soft">
           <h3>Settings</h3>
@@ -991,7 +1098,6 @@ button,select,input,textarea,label{touch-action:manipulation}
       </div>
     </div>
 
-    <!-- Full-width row: focus + generate -->
     <div class="focusbox" style="margin-top:20px">
       <label for="focus">AI focus — what should the AI pay attention to or skip?</label>
       <textarea id="focus" rows="3" placeholder='e.g. "Chapter 3 only", "skip examples", "emphasize formulas"'></textarea>
@@ -1017,7 +1123,7 @@ button,select,input,textarea,label{touch-action:manipulation}
     </div>
   </div>
 
-  <!-- DECKS -->
+  <!-- ========== DECKS ========== -->
   <div id="decksView" class="hide">
     <div class="row tight">
       <button id="mix" class="p">Study all decks</button>
@@ -1027,16 +1133,16 @@ button,select,input,textarea,label{touch-action:manipulation}
     </div>
     <div id="todayBox"></div>
     <div class="searchwrap"><input id="deckSearch" type="text" placeholder="Search decks and cards…" autocomplete="off"></div>
-    <div id="deckList"></div>
+    <div id="deckList" class="decklist"></div>
   </div>
 
-  <!-- NOTES LIBRARY -->
+  <!-- ========== NOTES LIBRARY ========== -->
   <div id="notesLibView" class="hide">
     <div class="searchwrap"><input id="noteSearch" type="text" placeholder="Search notes…" autocomplete="off"></div>
-    <div id="notesList"></div>
+    <div id="notesList" class="notes-grid"></div>
   </div>
 
-  <!-- STUDY -->
+  <!-- ========== STUDY ========== -->
   <div id="studyView" class="hide">
     <div class="studyhead">
       <button id="backDecks" class="ghost icon" title="Back to decks">←</button>
@@ -1047,7 +1153,7 @@ button,select,input,textarea,label{touch-action:manipulation}
           <button id="renameBtn">Rename deck</button>
           <button id="openEditor">Edit all cards</button>
           <button id="publishBtn">Publish publicly</button>
-          <label>Card color <input type="color" id="cardColor" value="#3d5afe"></label>
+          <label>Card color <input type="color" id="cardColor" value="#FFDE00"></label>
           <button id="resetColor">Reset card color</button>
           <button id="resetProgress" class="danger">Reset all progress</button>
           <button id="delDeck" class="danger">Delete deck</button>
@@ -1059,80 +1165,85 @@ button,select,input,textarea,label{touch-action:manipulation}
       <span id="dueInfo"></span>
     </div>
 
-    <div id="card">
-      <div id="inner">
-        <div class="face" id="faceF">
-          <span class="tag">Question</span>
-          <button class="spk" data-speak="front" title="Read aloud">🔊</button>
-          <span id="front"></span>
+    <div class="study-grid">
+      <div>
+        <div id="card">
+          <div id="inner">
+            <div class="face" id="faceF">
+              <span class="tag">Question</span>
+              <button class="spk" data-speak="front" title="Read aloud">A</button>
+              <span id="front"></span>
+            </div>
+            <div class="face b" id="faceB">
+              <span class="tag">Answer</span>
+              <button class="spk" data-speak="back" title="Read aloud">A</button>
+              <span id="back"></span>
+            </div>
+          </div>
         </div>
-        <div class="face b" id="faceB">
-          <span class="tag">Answer</span>
-          <button class="spk" data-speak="back" title="Read aloud">🔊</button>
-          <span id="back"></span>
+
+        <div class="navrow" id="navRow">
+          <button id="prev" class="icon" title="Previous">←</button>
+          <button id="flip" class="p big">Show answer</button>
+          <button id="next" class="icon" title="Next">→</button>
         </div>
+
+        <div class="ratebar hide" id="rateBar">
+          <button id="rateAgain" class="rate r0">Again<small id="iv0"></small></button>
+          <button id="rateHard"  class="rate r1">Hard<small  id="iv1"></small></button>
+          <button id="rateGood"  class="rate r2">Good<small  id="iv2"></small></button>
+          <button id="rateEasy"  class="rate r3">Easy<small  id="iv3"></small></button>
+        </div>
+
+        <div id="summary" class="hide"></div>
       </div>
-    </div>
 
-    <div class="navrow" id="navRow">
-      <button id="prev" class="icon" title="Previous">◀</button>
-      <button id="flip" class="p big">Show answer</button>
-      <button id="next" class="icon" title="Next">▶</button>
-    </div>
-    <div class="ratebar hide" id="rateBar">
-      <button id="rateAgain" class="rate r0">Again<small id="iv0"></small></button>
-      <button id="rateHard"  class="rate r1">Hard<small  id="iv1"></small></button>
-      <button id="rateGood"  class="rate r2">Good<small  id="iv2"></small></button>
-      <button id="rateEasy"  class="rate r3">Easy<small  id="iv3"></small></button>
-    </div>
+      <div class="study-side">
+        <div class="ttsbar">
+          <label>Voice</label>
+          <select id="voice" style="flex:1;min-width:120px"><option value="">Default</option></select>
+          <label>Speed</label>
+          <input id="rate" type="range" min="0.5" max="1.6" step="0.05" value="1">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="autoSpeak"> Auto-read
+          </label>
+        </div>
 
-    <div id="summary" class="hide"></div>
-
-    <div class="ttsbar">
-      <span style="color:var(--mut)">🔊</span>
-      <label for="voice">Voice</label>
-      <select id="voice" style="flex:1;min-width:120px"><option value="">Default</option></select>
-      <label for="rate">Speed</label>
-      <input id="rate" type="range" min="0.5" max="1.6" step="0.05" value="1">
-      <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
-        <input type="checkbox" id="autoSpeak"> Auto-read
-      </label>
-    </div>
-
-    <details class="tools">
-      <summary>More tools</summary>
-      <div class="toolgrid">
-        <button id="edit">✏️ Quick edit</button>
-        <button id="openEditor2">📝 Edit all cards</button>
-        <button id="add">➕ Add card</button>
-        <button id="del" class="danger">🗑 Delete card</button>
-        <button id="shuffle">🔀 Shuffle</button>
-        <button id="filterDue">📅 Due only</button>
-        <button id="filterAll">📚 All cards</button>
-        <button id="filterMissed">🔁 Missed</button>
-        <button id="quiz">❓ Quiz</button>
-        <button id="share">🔗 Share link</button>
-        <details class="sub">
-          <summary>⬇ Export deck</summary>
+        <details class="tools">
+          <summary>More tools</summary>
           <div class="toolgrid">
-            <button id="csv">CSV</button>
-            <button id="anki">Anki .txt</button>
-            <button id="quizlet">Quizlet .txt</button>
-            <button id="notion">Notion .md</button>
-            <button id="printPdf">Print / PDF</button>
+            <button id="edit">Quick edit</button>
+            <button id="openEditor2">Edit all cards</button>
+            <button id="add">Add card</button>
+            <button id="del" class="danger">Delete card</button>
+            <button id="shuffle">Shuffle</button>
+            <button id="filterDue">Due only</button>
+            <button id="filterAll">All cards</button>
+            <button id="filterMissed">Missed</button>
+            <button id="quiz">Quiz</button>
+            <button id="share">Share link</button>
+            <details class="sub">
+              <summary>Export deck</summary>
+              <div class="toolgrid">
+                <button id="csv">CSV</button>
+                <button id="anki">Anki .txt</button>
+                <button id="quizlet">Quizlet .txt</button>
+                <button id="notion">Notion .md</button>
+                <button id="printPdf">Print / PDF</button>
+              </div>
+            </details>
           </div>
         </details>
       </div>
-    </details>
+    </div>
   </div>
 
-  
   <!-- ========== CARD EDITOR ========== -->
   <div id="editView" class="hide">
     <div class="studyhead">
       <button id="editBack" class="ghost icon" title="Back">←</button>
       <div class="title" id="editTitle">Edit cards</div>
-      <button id="editSave" class="p">💾 Save all</button>
+      <button id="editSave" class="p">Save all</button>
     </div>
     <p class="sub" id="editHint" style="margin-bottom:20px">Edit any card below, add new ones, or delete the ones you don't want. Nothing saves until you click <b>Save all</b>.</p>
     <div id="editList" class="editor-grid"></div>
@@ -1147,9 +1258,17 @@ button,select,input,textarea,label{touch-action:manipulation}
   <div id="quizView" class="hide">
     <div class="studyhead">
       <button id="quizBack" class="ghost icon">←</button>
-      <div class="title">Quiz</div>
+      <div class="title" id="quizTitle">Quiz</div>
+      <div class="badge" id="quizScoreLive">Score: 0</div>
     </div>
-    <div id="qbox" class="panel"></div>
+    <div class="progline">
+      <span id="quizProg"></span>
+      <span id="quizTimerDisplay"></span>
+    </div>
+    <div class="prog-wrap" style="margin-bottom:20px">
+      <div class="prog-fill" id="quizProgFill"></div>
+    </div>
+    <div id="qbox"></div>
   </div>
 
   <!-- ========== SINGLE NOTE ========== -->
@@ -1160,9 +1279,9 @@ button,select,input,textarea,label{touch-action:manipulation}
       <details class="menu">
         <summary title="Note actions">⚙</summary>
         <div class="menu-panel">
-          <button id="copyNote">📋 Copy text</button>
-          <button id="downloadNote">⬇ Download .md</button>
-          <button id="delNote" class="danger">🗑 Delete note</button>
+          <button id="copyNote">Copy text</button>
+          <button id="downloadNote">Download .md</button>
+          <button id="delNote" class="danger">Delete note</button>
         </div>
       </details>
     </div>
@@ -1177,14 +1296,14 @@ button,select,input,textarea,label{touch-action:manipulation}
       <details class="menu">
         <summary>⚙</summary>
         <div class="menu-panel">
-          <button id="copy">📋 Copy text</button>
-          <button id="saveNewNote" class="p">💾 Save to library</button>
-          <button id="save">⬇ Download .md</button>
+          <button id="copy">Copy text</button>
+          <button id="saveNewNote" class="p">Save to library</button>
+          <button id="save">Download .md</button>
         </div>
       </details>
     </div>
     <div class="row tight">
-      <button id="saveBtnBig" class="p big">💾 Save to library</button>
+      <button id="saveBtnBig" class="p big">Save to library</button>
     </div>
     <div id="out2"></div>
   </div>
@@ -1193,7 +1312,7 @@ button,select,input,textarea,label{touch-action:manipulation}
 <!-- ========== AUTH MODAL ========== -->
 <div id="authModal" class="modal hide">
   <div class="modal-card">
-    <button class="modal-x" id="authClose" type="button">✕</button>
+    <button class="modal-x" id="authClose" type="button">X</button>
 
     <div id="authStep1">
       <h2>Sign in</h2>
@@ -1221,10 +1340,53 @@ button,select,input,textarea,label{touch-action:manipulation}
   </div>
 </div>
 
+<!-- ========== QUIZ SETUP MODAL ========== -->
+<div id="quizSetupModal" class="modal hide">
+  <div class="modal-card">
+    <button class="modal-x" id="quizSetupClose" type="button">X</button>
+    <h2>Quiz setup</h2>
+    <p class="sub">Pick how you want to be tested on this deck.</p>
+
+    <div class="field" style="margin-bottom:14px">
+      <label for="quizType">Quiz type</label>
+      <select id="quizType">
+        <option value="mc">Multiple choice</option>
+        <option value="tf">True / False</option>
+        <option value="fib">Fill in the blank</option>
+        <option value="typing">Typing</option>
+        <option value="ident">Identification</option>
+        <option value="enum">Enumeration</option>
+        <option value="match">Matching type</option>
+      </select>
+    </div>
+
+    <div class="field" style="margin-bottom:14px">
+      <label for="quizCount">Number of questions</label>
+      <select id="quizCount">
+        <option>5</option>
+        <option selected>10</option>
+        <option>15</option>
+        <option>20</option>
+      </select>
+    </div>
+
+    <div class="field" style="margin-bottom:20px">
+      <label for="quizTimer">Time per question</label>
+      <select id="quizTimer">
+        <option value="0" selected>No timer</option>
+        <option value="30">30 seconds</option>
+        <option value="60">60 seconds</option>
+      </select>
+    </div>
+
+    <button id="quizStartBtn" class="p big" type="button">Start quiz</button>
+  </div>
+</div>
+
 <!-- ========== ACCOUNT MODAL ========== -->
 <div id="accountModal" class="modal hide">
   <div class="modal-card">
-    <button class="modal-x" id="accountClose" type="button">✕</button>
+    <button class="modal-x" id="accountClose" type="button">X</button>
     <h2>Account</h2>
     <p class="sub">You're signed in. Your decks sync to this account.</p>
 
@@ -1233,12 +1395,12 @@ button,select,input,textarea,label{touch-action:manipulation}
       <div class="acct-info">
         <div class="acct-name" id="acctName">—</div>
         <div class="acct-email" id="acctEmail">—</div>
-        <div class="acct-badge">☁ Synced</div>
+        <div class="acct-badge">Synced</div>
       </div>
     </div>
 
     <div class="acct-actions">
-      <button id="acctSyncBtn" class="big" type="button">↻ Sync now</button>
+      <button id="acctSyncBtn" class="big" type="button">Sync now</button>
       <button id="acctSignOutBtn" class="danger big" type="button">Sign out</button>
     </div>
   </div>
@@ -1290,7 +1452,7 @@ function storageKey(base) {
 function load(key, fb) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fb; } catch { return fb; } }
 function store(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); return true; }
-  catch { statusEl.textContent = "⚠ Storage is full or blocked."; return false; }
+  catch { statusEl.textContent = "Storage is full or blocked."; return false; }
 }
 function loadDecks()   { return load(storageKey("fc_decks"), []); }
 function loadNotes()   { return load(storageKey("fc_notes"), []); }
@@ -1336,7 +1498,7 @@ const isDue = c => !c.srs || !c.srs.due || c.srs.due <= Date.now();
 const isLearned = c => c.srs && c.srs.interval >= 21;
 function dueCount(deck) { return deck.cards.filter(isDue).length; }
 
-/* ========== accent picker (neobrutalism) ========== */
+/* ========== accent picker ========== */
 const ACCENT_PRESETS = ["#FFDE00","#FF6B9D","#00D9A3","#7C6FFF","#FF9F1C","#4ECDC4","#FF4757","#6BCF7F"];
 function isDark(hex) {
   const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
@@ -1464,7 +1626,7 @@ function renderToday() {
   const doneCount = todayTodos.filter(t => t.done).length;
   const total = todayTodos.length;
 
-  let html = '<h3>📋 Today' + (total ? '<span class="todaycount">' + doneCount + '/' + total + ' done</span>' : '') + '</h3>';
+  let html = '<h3>Today' + (total ? '<span class="todaycount">' + doneCount + '/' + total + ' done</span>' : '') + '</h3>';
 
   if (!total) {
     html += '<div style="color:var(--mut);font-size:.9rem;padding:4px 0 8px;font-weight:600">Add decks below to build your study plan for today.</div>';
@@ -1479,7 +1641,7 @@ function renderToday() {
       html += '<span class="tname">' + escHtml(d.name) + '</span>';
       html += '<span class="tdue">' + dueLabel + '</span>';
       html += '<button class="tbtn p" data-act="study" type="button">Study</button>';
-      html += '<button class="tbtn" data-act="remove" type="button" title="Remove">✕</button>';
+      html += '<button class="tbtn" data-act="remove" type="button" title="Remove">X</button>';
       html += '</div>';
     });
   }
@@ -1553,7 +1715,7 @@ function renderToday() {
 /* ========== auth UI ========== */
 function renderAuth() {
   const chip = $("authBtn"), av = $("authAv"), em = $("authEm");
-  if (!Cloud.isConfigured()) { chip.classList.remove("signed"); av.textContent = "☁"; em.textContent = "Cloud off"; return; }
+  if (!Cloud.isConfigured()) { chip.classList.remove("signed"); av.textContent = "C"; em.textContent = "Cloud off"; return; }
   if (user) {
     av.textContent = (user.email || "?").trim()[0].toUpperCase();
     em.textContent = user.email.length > 22 ? user.email.slice(0, 20) + "…" : user.email;
@@ -1625,10 +1787,10 @@ $("accountModal").onclick = e => {
 $("acctSyncBtn").onclick = async () => {
   const btn = $("acctSyncBtn");
   btn.disabled = true;
-  btn.textContent = "↻ Syncing…";
+  btn.textContent = "Syncing…";
   await pullAndMerge();
   btn.disabled = false;
-  btn.textContent = "↻ Sync now";
+  btn.textContent = "Sync now";
   setTimeout(() => $("accountModal").classList.add("hide"), 400);
 };
 $("acctSignOutBtn").onclick = async () => {
@@ -1746,7 +1908,7 @@ async function pullAndMerge() {
     $("nNotes").textContent = notesLib.length;
     renderNotesLib();
 
-    statusEl.textContent = "✓ Synced. " + cloudDecks.length + " deck(s), " + cloudNotes.length + " note(s).";
+    statusEl.textContent = "Synced. " + cloudDecks.length + " deck(s), " + cloudNotes.length + " note(s).";
   } catch (e) { statusEl.textContent = "Cloud sync failed: " + e.message; }
 }
 Cloud.onAuth(u => {
@@ -1848,7 +2010,7 @@ function renderFileList() {
       : entry.status === "error" ? "error" : "");
     const stat = document.createElement("span");
     stat.className = "fstat" + (entry.status === "reading" ? " spin" : "");
-    stat.textContent = entry.status === "queued" ? (i + 1) : entry.status === "reading" ? "" : entry.status === "ready" ? "✓" : entry.status === "error" ? "!" : "•";
+    stat.textContent = entry.status === "queued" ? (i + 1) : entry.status === "reading" ? "" : entry.status === "ready" ? "OK" : entry.status === "error" ? "!" : "•";
     const body = document.createElement("div");
     body.className = "fbody";
     const nm = document.createElement("div"); nm.className = "fname"; nm.textContent = entry.name;
@@ -1859,7 +2021,7 @@ function renderFileList() {
     else if (entry.status === "error") meta.textContent = entry.error || "Could not read.";
     body.append(nm, meta);
     const del = document.createElement("button");
-    del.className = "fdel"; del.type = "button"; del.textContent = "✕"; del.title = "Remove";
+    del.className = "fdel"; del.type = "button"; del.textContent = "X"; del.title = "Remove";
     del.onclick = () => { pdfFiles.splice(i, 1); renderFileList(); };
     row.append(stat, body, del);
     box.appendChild(row);
@@ -1899,14 +2061,14 @@ $("urlFetch").onclick = async () => {
     if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
     if (data.kind === "pdf") {
       urlData = { kind: "pdf", data: data.data, name: data.name || "downloaded.pdf" };
-      out.innerHTML = '<div class="ok">✓ Fetched PDF: <b>' + escHtml(urlData.name) + '</b></div>';
+      out.innerHTML = '<div class="ok">Fetched PDF: <b>' + escHtml(urlData.name) + '</b></div>';
     } else {
       urlData = { kind: "text", text: data.text, title: data.title || "Imported page" };
-      out.innerHTML = '<div class="ok">✓ Fetched <b>' + escHtml(urlData.title) + '</b> — ' + data.text.length.toLocaleString() + ' characters</div>';
+      out.innerHTML = '<div class="ok">Fetched <b>' + escHtml(urlData.title) + '</b> — ' + data.text.length.toLocaleString() + ' characters</div>';
     }
   } catch (e) {
     urlData = null;
-    out.innerHTML = '<div class="err">✕ ' + escHtml(e.message) + '</div>';
+    out.innerHTML = '<div class="err">' + escHtml(e.message) + '</div>';
   } finally { $("urlFetch").disabled = false; }
 };
 $("urlInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("urlFetch").click(); } });
@@ -2231,7 +2393,7 @@ async function generate() {
       $("rawText").value = ""; $("rawText").oninput();
       urlData = null; $("urlInput").value = ""; $("urlResult").innerHTML = "";
       startSession(deck, "all");
-      statusEl.textContent = '✓ Saved as "' + deck.name + '".' + (user ? " Synced to your account." : " Sign in to sync across devices.");
+      statusEl.textContent = 'Saved as "' + deck.name + '".' + (user ? " Synced to your account." : " Sign in to sync across devices.");
     } else {
       notesMd = data.notes;
       $("genNoteTitle").textContent = deckName || "Study notes";
@@ -2240,7 +2402,7 @@ async function generate() {
       $("rawText").value = ""; $("rawText").oninput();
       urlData = null; $("urlInput").value = ""; $("urlResult").innerHTML = "";
       show("notes");
-      statusEl.textContent = "✓ Done — use Save to library to keep this.";
+      statusEl.textContent = "Done — use Save to library to keep this.";
     }
   } catch (e) {
     finishProgress("Error", true);
@@ -2278,7 +2440,7 @@ function renderDecks() {
     const chip = document.createElement("span"); chip.className = "chip"; chip.style.background = d.color || "#FFDE00";
     nm.append(chip, document.createTextNode(d.name));
     head.appendChild(nm);
-    if (d.isPublic) { const pb = document.createElement("span"); pb.className = "badge pub"; pb.textContent = "🔗 public"; head.appendChild(pb); }
+    if (d.isPublic) { const pb = document.createElement("span"); pb.className = "badge pub"; pb.textContent = "public"; head.appendChild(pb); }
 
     const meta = document.createElement("div"); meta.className = "meta";
     const due = dueCount(d);
@@ -2289,7 +2451,7 @@ function renderDecks() {
       const mc = deckCardMatchCount(d, q);
       if (mc > 0) { const mb = document.createElement("span"); mb.className = "badge due"; mb.textContent = mc + " match" + (mc === 1 ? "" : "es"); meta.append(mb); }
     }
-    if (user) { const cb = document.createElement("span"); cb.className = "badge cloud"; cb.textContent = "☁ yours"; meta.append(cb); }
+    if (user) { const cb = document.createElement("span"); cb.className = "badge cloud"; cb.textContent = "yours"; meta.append(cb); }
     else { const gb = document.createElement("span"); gb.className = "badge guest"; gb.textContent = "guest"; meta.append(gb); }
 
     const btns = document.createElement("div"); btns.className = "btns";
@@ -2340,7 +2502,7 @@ $("publishBtn").onclick = async () => {
       const i = decks.findIndex(d => d.id === cur.id);
       if (i >= 0) decks[i] = cur;
       saveDecks(); renderDecks();
-      statusEl.textContent = "✓ Deck is now private.";
+      statusEl.textContent = "Deck is now private.";
     } else {
       const updated = await Cloud.publishDeck(cur.id);
       Object.assign(cur, updated);
@@ -2348,10 +2510,10 @@ $("publishBtn").onclick = async () => {
       if (i >= 0) decks[i] = cur;
       saveDecks(); renderDecks();
       const url = location.origin + location.pathname + "?d=" + updated.slug;
-      try { await navigator.clipboard.writeText(url); statusEl.textContent = "✓ Published! Public link copied."; }
-      catch { statusEl.textContent = "✓ Published! Share this link: " + url; }
+      try { await navigator.clipboard.writeText(url); statusEl.textContent = "Published! Public link copied."; }
+      catch { statusEl.textContent = "Published! Share this link: " + url; }
     }
-    $("publishBtn").textContent = cur.isPublic ? "Unpublish deck" : "🔗 Publish publicly";
+    $("publishBtn").textContent = cur.isPublic ? "Unpublish deck" : "Publish publicly";
   } catch (e) { statusEl.textContent = "Publish failed: " + e.message; }
 };
 
@@ -2382,7 +2544,7 @@ function startSession(deck, filter) {
   $("card").classList.remove("flip");
   $("deckTitle").textContent = cur.name;
   $("cardColor").value = cur.color || "#FFDE00";
-  $("publishBtn").textContent = cur.isPublic ? "Unpublish deck" : "🔗 Publish publicly";
+  $("publishBtn").textContent = cur.isPublic ? "Unpublish deck" : "Publish publicly";
   $("summary").classList.add("hide");
   $("card").classList.remove("hide");
   $("navRow").classList.remove("hide");
@@ -2469,7 +2631,7 @@ $("resetProgress").onclick = () => {
   if (!confirm("Reset all SRS progress for this deck?")) return;
   cur.cards.forEach(c => { delete c.srs; });
   saveDecks(); pushDeck(cur);
-  statusEl.textContent = "✓ Progress reset.";
+  statusEl.textContent = "Progress reset.";
   startSession(cur, "all");
 };
 $("shuffle").onclick = () => {
@@ -2546,7 +2708,7 @@ function renderEditor() {
     const head = document.createElement("div"); head.className = "editrow-head";
     const num = document.createElement("div"); num.className = "editnum"; num.textContent = "#" + (i + 1);
     const del = document.createElement("button");
-    del.className = "editdel danger"; del.type = "button"; del.title = "Delete card"; del.textContent = "🗑 Delete";
+    del.className = "editdel danger"; del.type = "button"; del.title = "Delete card"; del.textContent = "Delete";
     del.onclick = () => { if (!confirm("Delete card " + (i + 1) + "?")) return; editCards.splice(i, 1); renderEditor(); };
     head.append(num, del);
 
@@ -2590,7 +2752,7 @@ function saveEditor() {
   editTarget.cards = cleaned;
   saveDecks(); pushDeck(editTarget);
   $("nDecks").textContent = decks.length;
-  statusEl.textContent = "✓ Saved " + cleaned.length + " card(s)" + (cleaned.length !== before ? " (" + (cleaned.length - before >= 0 ? "+" : "") + (cleaned.length - before) + ")" : "") + ".";
+  statusEl.textContent = "Saved " + cleaned.length + " card(s)" + (cleaned.length !== before ? " (" + (cleaned.length - before >= 0 ? "+" : "") + (cleaned.length - before) + ")" : "") + ".";
   if (editReturn === "study" && cur && cur.id === editTarget.id && !cur.virtual) {
     const tgt = editTarget; editTarget = null; editCards = [];
     startSession(tgt, dueCount(tgt) ? "due" : "all");
@@ -2689,7 +2851,7 @@ $("importAll").onclick = () => {
       saveDecks(); saveNotes(); renderDecks(); renderNotesLib();
       $("nDecks").textContent = decks.length;
       $("nNotes").textContent = notesLib.length;
-      statusEl.textContent = "✓ Imported " + addDecks.length + " deck(s)" + (addNotes.length ? " and " + addNotes.length + " note(s)" : "") + ".";
+      statusEl.textContent = "Imported " + addDecks.length + " deck(s)" + (addNotes.length ? " and " + addNotes.length + " note(s)" : "") + ".";
     } catch { statusEl.textContent = "That file didn't look like a backup."; }
   };
   i.click();
@@ -2704,49 +2866,504 @@ $("share").onclick = async () => {
   const link = location.origin + location.pathname + "#d=" + enc(JSON.stringify(payload));
   try {
     await navigator.clipboard.writeText(link);
-    statusEl.textContent = "✓ Link copied." + (link.length > 8000 ? " It's long — some apps may cut it off." : "") + " Tip: sign in and Publish for a short public link.";
+    statusEl.textContent = "Link copied." + (link.length > 8000 ? " It's long — some apps may cut it off." : "") + " Tip: sign in and Publish for a short public link.";
   } catch { prompt("Copy this link:", link); }
 };
 
-/* ========== quiz ========== */
-$("quiz").onclick = () => {
+/* ========== quiz (7 types) ========== */
+let quizState = null;
+let quizTimerInterval = null;
+
+function quizTypeLabel(t) {
+  return {
+    mc: "Multiple choice",
+    tf: "True / False",
+    fib: "Fill in the blank",
+    typing: "Typing",
+    ident: "Identification",
+    enum: "Enumeration",
+    match: "Matching type"
+  }[t] || "Quiz";
+}
+
+function normalizeAnswer(s) {
+  return String(s).toLowerCase().trim()
+    .replace(/[.,;:!?]+$/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function splitItems(s) {
+  return String(s)
+    .split(/[\n,;•·]+/g)
+    .map(x => x.replace(/^[-–—\s]+/, "").trim())
+    .filter(x => x.length > 1);
+}
+
+function buildFib(front, back) {
+  const backClean = String(back).replace(/[.,;:!?]+$/g, "").trim();
+  if (backClean.length >= 2 && backClean.length <= 40) {
+    const idx = front.toLowerCase().indexOf(backClean.toLowerCase());
+    if (idx !== -1) {
+      return {
+        prompt: front.slice(0, idx) + "_____" + front.slice(idx + backClean.length),
+        correct: backClean
+      };
+    }
+  }
+  const words = (front.match(/\b[A-Za-z]{5,}\b/g) || []).filter(w => w.length >= 5);
+  if (words.length) {
+    const longest = words.sort((a, b) => b.length - a.length)[0];
+    const idx = front.indexOf(longest);
+    return {
+      prompt: front.slice(0, idx) + "_____" + front.slice(idx + longest.length),
+      correct: longest
+    };
+  }
+  return { prompt: front, correct: back };
+}
+
+function buildQuestion(type, card, pool) {
+  if (type === "mc") {
+    const wrongs = pool.filter(c => c.back !== card.back).map(c => c.back).sort(() => Math.random() - .5).slice(0, 3);
+    const options = [card.back, ...wrongs].sort(() => Math.random() - .5);
+    return { card, prompt: card.front, correct: card.back, options };
+  }
+  if (type === "fib") {
+    const { prompt, correct } = buildFib(card.front, card.back);
+    return { card, prompt, correct };
+  }
+  if (type === "tf") {
+    const makeFalse = Math.random() < 0.5 && pool.length > 1;
+    if (makeFalse) {
+      const others = pool.filter(c => c.back !== card.back);
+      const other = others[Math.floor(Math.random() * others.length)];
+      return { card, prompt: card.front + "  ->  " + other.back, correct: "False" };
+    }
+    return { card, prompt: card.front + "  ->  " + card.back, correct: "True" };
+  }
+  if (type === "ident") {
+    return { card, prompt: card.front, correct: card.back };
+  }
+  if (type === "enum") {
+    const items = splitItems(card.back);
+    return { card, prompt: card.front, correct: card.back, items };
+  }
+  return { card, prompt: card.front, correct: card.back };
+}
+
+function openQuizSetup() {
   if (!cur) return;
   const pool = cur.cards.filter(c => c.front && c.back);
-  if (pool.length < 2) { statusEl.textContent = "You need at least 2 cards for a quiz."; return; }
-  const qs = pool.slice().sort(() => Math.random() - .5).slice(0, Math.min(10, pool.length));
-  const box = $("qbox");
-  let i = 0, score = 0;
-  show("quiz");
-  const next = () => {
-    box.innerHTML = ""; delete box.dataset.lock;
-    if (i >= qs.length) {
-      box.innerHTML = '<h2>Score: ' + score + " / " + qs.length + '</h2><div class="row"><button class="p" id="quizDone">Back to deck</button></div>';
-      $("quizDone").onclick = () => show("study"); return;
-    }
-    const q = qs[i];
-    const wrongs = pool.filter(c => c.back !== q.back).map(c => c.back).sort(() => Math.random() - .5).slice(0, 3);
-    const h = document.createElement("h3");
-    h.textContent = (i + 1) + " / " + qs.length + ". " + q.front;
-    box.appendChild(h);
-    [q.back, ...wrongs].sort(() => Math.random() - .5).forEach(o => {
-      const b = document.createElement("button");
-      b.className = "qopt"; b.textContent = o;
-      b.onclick = () => {
-        if (box.dataset.lock) return; box.dataset.lock = 1;
-        const right = o === q.back; if (right) score++;
-        b.classList.add(right ? "ok" : "no");
-        box.querySelectorAll(".qopt").forEach(x => { if (x.textContent === q.back) x.classList.add("ok"); });
-        const n = document.createElement("button");
-        n.className = "p"; n.style.marginTop = "16px";
-        n.textContent = i + 1 >= qs.length ? "See score" : "Next question";
-        n.onclick = () => { i++; next(); };
-        box.appendChild(n);
-      };
-      box.appendChild(b);
-    });
-  };
-  next();
+  if (pool.length < 2) {
+    statusEl.textContent = "You need at least 2 cards for a quiz.";
+    return;
+  }
+  $("quizSetupModal").classList.remove("hide");
+  setTimeout(() => $("quizType").focus(), 50);
+}
+
+$("quizSetupClose").onclick = () => $("quizSetupModal").classList.add("hide");
+$("quizSetupModal").onclick = e => {
+  if (e.target.id === "quizSetupModal") $("quizSetupModal").classList.add("hide");
 };
+$("quizStartBtn").onclick = () => {
+  const type = $("quizType").value;
+  const count = parseInt($("quizCount").value, 10) || 10;
+  const timer = parseInt($("quizTimer").value, 10) || 0;
+  $("quizSetupModal").classList.add("hide");
+  startQuiz(type, count, timer);
+};
+
+function startQuiz(type, count, timerSec) {
+  const pool = cur.cards.filter(c => c.front && c.back);
+  const shuffled = pool.slice().sort(() => Math.random() - .5);
+
+  let questions = [];
+
+  if (type === "match") {
+    const groupSize = Math.min(4, pool.length);
+    const groupCount = Math.max(1, Math.min(count, Math.floor(pool.length / groupSize) || 1));
+    for (let g = 0; g < groupCount && g * groupSize < shuffled.length; g++) {
+      const chunk = shuffled.slice(g * groupSize, (g + 1) * groupSize);
+      if (chunk.length < 2) break;
+      const lefts = chunk.map(c => ({ id: c.id, text: c.front }));
+      const rights = chunk.map(c => ({ id: c.id, text: c.back })).sort(() => Math.random() - .5);
+      questions.push({ type: "match", pairs: chunk, lefts, rights });
+    }
+  } else {
+    const chosen = shuffled.slice(0, Math.min(count, pool.length));
+    questions = chosen.map(c => buildQuestion(type, c, pool));
+  }
+
+  quizState = { type, timerSec, questions, idx: 0, score: 0, answers: [] };
+
+  $("quizTitle").textContent = "Quiz — " + quizTypeLabel(type);
+  $("quizScoreLive").textContent = "Score: 0";
+  $("qbox").classList.remove("panel");
+  show("quiz");
+  renderQuizQuestion();
+}
+
+function startQuizTimer(sec) {
+  let left = sec;
+  $("quizTimerDisplay").textContent = left + "s left";
+  clearInterval(quizTimerInterval);
+  quizTimerInterval = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      clearInterval(quizTimerInterval);
+      $("quizTimerDisplay").textContent = "Time up";
+      if (quizState && quizState.type === "match") {
+        submitMatch({});
+      } else {
+        submitAnswer("(no answer)", false);
+      }
+      return;
+    }
+    $("quizTimerDisplay").textContent = left + "s left";
+  }, 1000);
+}
+
+function renderQuizQuestion() {
+  const s = quizState;
+  if (!s) return;
+
+  clearInterval(quizTimerInterval);
+  $("quizTimerDisplay").textContent = "";
+
+  if (s.idx >= s.questions.length) return endQuiz();
+
+  const q = s.questions[s.idx];
+  const box = $("qbox");
+  box.innerHTML = "";
+
+  $("quizProg").textContent = "Question " + (s.idx + 1) + " of " + s.questions.length;
+  $("quizScoreLive").textContent = "Score: " + s.score;
+  $("quizProgFill").style.width = ((s.idx / s.questions.length) * 100) + "%";
+
+  // ---- Matching ----
+  if (s.type === "match") {
+    const qCard = document.createElement("div");
+    qCard.className = "quiz-q";
+    const qLabel = document.createElement("div");
+    qLabel.className = "quiz-q-label";
+    qLabel.textContent = "Match each term to its definition";
+    const qText = document.createElement("div");
+    qText.className = "quiz-q-text";
+    qText.textContent = "Pick the correct answer for each item below.";
+    qCard.append(qLabel, qText);
+    box.appendChild(qCard);
+
+    const list = document.createElement("div");
+    list.className = "quiz-match-list";
+    const state = {};
+    q.lefts.forEach(left => {
+      const row = document.createElement("div");
+      row.className = "quiz-match-row";
+      row.dataset.leftId = left.id;
+      const qEl = document.createElement("div");
+      qEl.className = "quiz-match-q";
+      qEl.textContent = left.text;
+      const sel = document.createElement("select");
+      sel.dataset.leftId = left.id;
+      sel.innerHTML = '<option value="">Choose…</option>' +
+        q.rights.map(r => '<option value="' + r.id + '">' + escHtml(r.text) + '</option>').join("");
+      sel.onchange = e => { state[e.target.dataset.leftId] = e.target.value; };
+      row.append(qEl, sel);
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+
+    const submit = document.createElement("button");
+    submit.className = "p big";
+    submit.style.marginTop = "20px";
+    submit.textContent = "Submit matches";
+    submit.onclick = () => submitMatch(state);
+    box.appendChild(submit);
+
+    if (s.timerSec > 0) startQuizTimer(s.timerSec);
+    return;
+  }
+
+  // ---- Regular question ----
+  const qCard = document.createElement("div");
+  qCard.className = "quiz-q";
+  const qLabel = document.createElement("div");
+  qLabel.className = "quiz-q-label";
+  qLabel.textContent =
+    s.type === "tf"  ? "True or false?" :
+    s.type === "fib" ? "Fill in the blank" :
+    s.type === "ident" ? "Identification — type the term or answer" :
+    s.type === "enum" ? "Enumeration — list all items" :
+    "Question";
+  const qText = document.createElement("div");
+  qText.className = "quiz-q-text";
+  qText.textContent = q.prompt;
+  qCard.append(qLabel, qText);
+  box.appendChild(qCard);
+
+  const answerBox = document.createElement("div");
+  answerBox.className = "quiz-answer";
+
+  if (s.type === "mc") {
+    q.options.forEach(opt => {
+      const b = document.createElement("button");
+      b.className = "qopt";
+      b.textContent = opt;
+      b.onclick = () => submitAnswer(opt, opt === q.correct);
+      answerBox.appendChild(b);
+    });
+  } else if (s.type === "tf") {
+    const wrap = document.createElement("div");
+    wrap.className = "quiz-tf";
+    const bT = document.createElement("button");
+    bT.className = "p"; bT.textContent = "True";
+    bT.onclick = () => submitAnswer("True", q.correct === "True");
+    const bF = document.createElement("button");
+    bF.textContent = "False";
+    bF.onclick = () => submitAnswer("False", q.correct === "False");
+    wrap.append(bT, bF);
+    answerBox.appendChild(wrap);
+  } else if (s.type === "enum") {
+    const hint = document.createElement("div");
+    hint.className = "quiz-enum-hint";
+    hint.textContent = "Type each item separated by commas or new lines.";
+    const ta = document.createElement("textarea");
+    ta.className = "quiz-enum-input";
+    ta.placeholder = "Item 1, Item 2, Item 3…";
+    const submit = document.createElement("button");
+    submit.className = "p big";
+    submit.textContent = "Submit list";
+    submit.onclick = () => {
+      const val = ta.value.trim();
+      if (!val) return;
+      const got = splitItems(val);
+      const exp = q.items || splitItems(q.correct);
+      const used = new Set();
+      let matched = 0;
+      exp.forEach(e => {
+        const en = normalizeAnswer(e);
+        const hit = got.findIndex((g, i) => {
+          if (used.has(i)) return false;
+          const gn = normalizeAnswer(g);
+          return gn === en || gn.includes(en) || en.includes(gn);
+        });
+        if (hit !== -1) { used.add(hit); matched++; }
+      });
+      const correct = exp.length > 0 && matched === exp.length;
+      const pills = exp.map(e => {
+        const en = normalizeAnswer(e);
+        const ok = got.some((g, i) => used.has(i) && (normalizeAnswer(g) === en || normalizeAnswer(g).includes(en) || en.includes(normalizeAnswer(g))));
+        return '<span class="quiz-enum-pill ' + (ok ? "ok" : "miss") + '">' + escHtml(e) + '</span>';
+      }).join("");
+      const fb = document.createElement("div");
+      fb.className = "quiz-enum-result";
+      fb.innerHTML = pills;
+      submitAnswer(val, correct, "You got " + matched + " of " + exp.length + " items", fb);
+    };
+    answerBox.append(hint, ta, submit);
+    setTimeout(() => ta.focus(), 100);
+  } else {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "quiz-input";
+    input.placeholder =
+      s.type === "fib" ? "Type the missing word…" :
+      s.type === "ident" ? "Type the term…" :
+      "Type your answer…";
+    input.autocomplete = "off";
+    input.autocapitalize = "off";
+    input.spellcheck = false;
+    const submit = document.createElement("button");
+    submit.className = "p big";
+    submit.textContent = "Submit answer";
+    submit.onclick = () => {
+      const val = input.value.trim();
+      if (!val) return;
+      const correct = normalizeAnswer(val) === normalizeAnswer(q.correct);
+      submitAnswer(val, correct);
+    };
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); submit.click(); }
+    });
+    answerBox.append(input, submit);
+    setTimeout(() => input.focus(), 100);
+  }
+
+  box.appendChild(answerBox);
+  if (s.timerSec > 0) startQuizTimer(s.timerSec);
+}
+
+function submitAnswer(userAnswer, isCorrect, customNote, customEl) {
+  const s = quizState;
+  if (!s) return;
+  clearInterval(quizTimerInterval);
+
+  const q = s.questions[s.idx];
+  s.answers.push({ question: q, userAnswer: String(userAnswer), correct: !!isCorrect });
+  if (isCorrect) s.score++;
+
+  const box = $("qbox");
+  box.querySelectorAll("button, input, textarea, select").forEach(el => el.disabled = true);
+
+  if (s.type === "mc") {
+    box.querySelectorAll(".qopt").forEach(b => {
+      if (b.textContent === q.correct) b.classList.add("ok");
+      else if (b.textContent === userAnswer && !isCorrect) b.classList.add("no");
+    });
+  } else if (s.type === "tf") {
+    box.querySelectorAll(".quiz-tf button").forEach(b => {
+      if (b.textContent === q.correct) b.classList.add("ok");
+      else if (b.textContent === userAnswer && !isCorrect) b.classList.add("no");
+    });
+  } else {
+    const fb = document.createElement("div");
+    fb.className = "quiz-feedback " + (isCorrect ? "ok" : "no");
+    fb.textContent = customNote
+      ? customNote
+      : (isCorrect ? "Correct!" : "Correct answer: " + q.correct);
+    box.appendChild(fb);
+    if (customEl) box.appendChild(customEl);
+  }
+
+  const next = document.createElement("button");
+  next.className = "p big";
+  next.style.marginTop = "20px";
+  next.textContent = s.idx + 1 >= s.questions.length ? "See results" : "Next question";
+  next.onclick = () => { s.idx++; renderQuizQuestion(); };
+  box.appendChild(next);
+  setTimeout(() => next.focus(), 50);
+
+  $("quizScoreLive").textContent = "Score: " + s.score;
+  $("quizProgFill").style.width = (((s.idx + 1) / s.questions.length) * 100) + "%";
+}
+
+function submitMatch(state) {
+  const s = quizState;
+  if (!s) return;
+  clearInterval(quizTimerInterval);
+
+  const q = s.questions[s.idx];
+  const box = $("qbox");
+  box.querySelectorAll("button, select").forEach(el => el.disabled = true);
+
+  let correctPairs = 0;
+  const rows = box.querySelectorAll(".quiz-match-row");
+  rows.forEach(row => {
+    const leftId = row.dataset.leftId;
+    const picked = state[leftId];
+    const isRight = picked === leftId;
+    row.classList.add(isRight ? "ok" : "no");
+    if (isRight) correctPairs++;
+  });
+
+  const totalPairs = q.lefts.length;
+  const fullCredit = correctPairs === totalPairs;
+  if (fullCredit) s.score++;
+
+  s.answers.push({
+    question: { prompt: "Matching set (" + totalPairs + " pairs)", correct: totalPairs + " correct pairs" },
+    userAnswer: correctPairs + " / " + totalPairs + " correct",
+    correct: fullCredit,
+    isMatch: true
+  });
+
+  const fb = document.createElement("div");
+  fb.className = "quiz-feedback " + (fullCredit ? "ok" : "no");
+  fb.textContent = correctPairs + " of " + totalPairs + " pairs matched correctly";
+  box.appendChild(fb);
+
+  const next = document.createElement("button");
+  next.className = "p big";
+  next.style.marginTop = "20px";
+  next.textContent = s.idx + 1 >= s.questions.length ? "See results" : "Next set";
+  next.onclick = () => { s.idx++; renderQuizQuestion(); };
+  box.appendChild(next);
+  setTimeout(() => next.focus(), 50);
+
+  $("quizScoreLive").textContent = "Score: " + s.score;
+  $("quizProgFill").style.width = (((s.idx + 1) / s.questions.length) * 100) + "%";
+}
+
+function endQuiz() {
+  clearInterval(quizTimerInterval);
+  const s = quizState;
+  if (!s) return;
+  const total = s.questions.length;
+  const pct = Math.round((s.score / total) * 100);
+
+  $("quizTitle").textContent = "Quiz results";
+  $("quizProg").textContent = "Complete";
+  $("quizTimerDisplay").textContent = "";
+  $("quizProgFill").style.width = "100%";
+  $("quizScoreLive").textContent = "Score: " + s.score + " / " + total;
+
+  const box = $("qbox");
+  box.innerHTML = "";
+
+  const scoreCard = document.createElement("div");
+  scoreCard.className = "quiz-score-card";
+  const pctEl = document.createElement("div");
+  pctEl.className = "quiz-score-pct";
+  pctEl.textContent = pct + "%";
+  const lineEl = document.createElement("div");
+  lineEl.className = "quiz-score-line";
+  lineEl.textContent = s.score + " correct out of " + total;
+  const subEl = document.createElement("div");
+  subEl.className = "quiz-score-sub";
+  subEl.textContent = quizTypeLabel(s.type);
+  scoreCard.append(pctEl, lineEl, subEl);
+  box.appendChild(scoreCard);
+
+  const reviewTitle = document.createElement("h3");
+  reviewTitle.textContent = "Review";
+  reviewTitle.style.marginTop = "8px";
+  box.appendChild(reviewTitle);
+
+  const review = document.createElement("div");
+  review.className = "quiz-review";
+
+  s.answers.forEach((a, i) => {
+    const item = document.createElement("div");
+    item.className = "quiz-review-item " + (a.correct ? "ok" : "no");
+    const num = document.createElement("div");
+    num.className = "quiz-review-num";
+    num.textContent = (a.correct ? "OK" : "X") + " " + (i + 1);
+    const body = document.createElement("div");
+    body.className = "quiz-review-body";
+    const qLine = document.createElement("div");
+    qLine.className = "quiz-review-q";
+    qLine.textContent = a.question.prompt;
+    const aLine = document.createElement("div");
+    aLine.className = "quiz-review-a";
+    if (a.correct) {
+      aLine.textContent = "Your answer: " + a.userAnswer;
+    } else {
+      aLine.innerHTML = 'Your answer: <span class="wrong">' + escHtml(a.userAnswer) + '</span> · Correct: <span class="right">' + escHtml(a.question.correct) + '</span>';
+    }
+    body.append(qLine, aLine);
+    item.append(num, body);
+    review.appendChild(item);
+  });
+  box.appendChild(review);
+
+  const btns = document.createElement("div");
+  btns.className = "row center";
+  btns.style.marginTop = "24px";
+  const retry = document.createElement("button");
+  retry.className = "p";
+  retry.textContent = "Retry quiz";
+  retry.onclick = openQuizSetup;
+  const done = document.createElement("button");
+  done.textContent = "Back to deck";
+  done.onclick = () => show("study");
+  btns.append(retry, done);
+  box.appendChild(btns);
+
+  quizState = null;
+}
+
+$("quiz").onclick = openQuizSetup;
 
 /* ========== notes ========== */
 function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -2822,7 +3439,7 @@ function openNote(id) {
 }
 $("copyNote").onclick = async () => {
   const n = notesLib.find(x => x.id === $("noteView").dataset.id); if (!n) return;
-  try { await navigator.clipboard.writeText(n.md); statusEl.textContent = "✓ Copied."; }
+  try { await navigator.clipboard.writeText(n.md); statusEl.textContent = "Copied."; }
   catch { statusEl.textContent = "Copy failed."; }
 };
 $("downloadNote").onclick = () => {
@@ -2846,12 +3463,12 @@ function saveCurrentNotes() {
   notesLib.unshift(note);
   saveNotes(); pushNote(note);
   $("nNotes").textContent = notesLib.length;
-  statusEl.textContent = '✓ Saved "' + title.trim() + '" to your library' + (user ? " — synced to your account." : ".");
+  statusEl.textContent = 'Saved "' + title.trim() + '" to your library' + (user ? " — synced to your account." : ".");
 }
 $("saveNewNote").onclick = saveCurrentNotes;
 $("saveBtnBig").onclick  = saveCurrentNotes;
 $("copy").onclick = async () => {
-  try { await navigator.clipboard.writeText(notesMd); statusEl.textContent = "✓ Copied."; }
+  try { await navigator.clipboard.writeText(notesMd); statusEl.textContent = "Copied."; }
   catch { statusEl.textContent = "Copy failed."; }
 };
 $("save").onclick = () => download("study-notes.md", notesMd, "text/markdown");
@@ -2881,7 +3498,7 @@ renderAuth();
       $("nDecks").textContent = decks.length;
       history.replaceState(null, "", location.pathname);
       startSession(deck, "all");
-      statusEl.textContent = '✓ Imported shared deck "' + deck.name + '".';
+      statusEl.textContent = 'Imported shared deck "' + deck.name + '".';
       return;
     } catch (e) { statusEl.textContent = "Couldn't load that shared deck: " + e.message; return; }
   }
@@ -2897,7 +3514,7 @@ renderAuth();
       history.replaceState(null, "", location.pathname);
       $("nDecks").textContent = decks.length;
       startSession(deck, "all");
-      statusEl.textContent = '✓ Imported shared deck "' + deck.name + '".';
+      statusEl.textContent = 'Imported shared deck "' + deck.name + '".';
     } catch { statusEl.textContent = "That share link is broken."; }
   }
 })();
@@ -2925,3 +3542,4 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
+  
