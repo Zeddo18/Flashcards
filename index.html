@@ -47,7 +47,7 @@ body{
   background-size:22px 22px;
 }
 .wrap{
-  max-width:1400px;margin:0 auto;
+  max-width:1600px;margin:0 auto;
   padding:24px 20px 80px;
   padding-left:max(20px,env(safe-area-inset-left));
   padding-right:max(20px,env(safe-area-inset-right));
@@ -175,11 +175,11 @@ label{font-weight:600;font-size:.9rem}
   display:grid;
   grid-template-columns:1fr;
   gap:20px;
+  align-items:start;
 }
 @media (min-width:1000px){
-  .create-grid{grid-template-columns:1.6fr 1fr}
+  .create-grid{grid-template-columns:1.7fr 1fr}
 }
-
 /* ============ DROP ZONE ============ */
 #drop{
   position:relative;
@@ -188,7 +188,7 @@ label{font-weight:600;font-size:.9rem}
   text-align:center;cursor:pointer;
   transition:all .15s;
   box-shadow:var(--sh-inset);
-  min-height:260px;
+  min-height:440px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
 }
 #drop:hover{background:var(--panel);transform:translate(-2px,-2px);box-shadow:var(--sh)}
@@ -888,11 +888,12 @@ button,select,input,textarea,label{touch-action:manipulation}
   <div id="status"></div>
 
   <!-- ========== CREATE ========== -->
+   <!-- ========== CREATE ========== -->
   <div id="createView">
     <div class="source-tabs" id="sourceTabs">
-      <button class="src-tab on" data-src="pdf" type="button">📄 Files</button>
-      <button class="src-tab" data-src="text" type="button">📝 Paste text</button>
-      <button class="src-tab" data-src="url" type="button">🔗 From URL</button>
+      <button class="src-tab on" data-src="pdf" type="button">Files</button>
+      <button class="src-tab" data-src="text" type="button">Paste text</button>
+      <button class="src-tab" data-src="url" type="button">From URL</button>
     </div>
 
     <div class="create-grid">
@@ -900,7 +901,7 @@ button,select,input,textarea,label{touch-action:manipulation}
       <div>
         <div class="src-panel" id="pdfSrc">
           <div id="drop" tabindex="0" role="button" aria-label="Drop files here">
-            <span class="drop-icon">📄</span>
+            <span class="drop-icon">+</span>
             <b>Drop files here</b>
             <span>or click to choose — multiple files allowed</span>
             <div class="supported-formats">PDF · Word · PowerPoint · Excel · Text · CSV · Markdown · HTML · RTF</div>
@@ -911,7 +912,7 @@ button,select,input,textarea,label{touch-action:manipulation}
         </div>
 
         <div class="src-panel hide" id="textSrc">
-          <textarea id="rawText" rows="14" placeholder="Paste or type your text here — chapter notes, an article, a transcript, anything goes."></textarea>
+          <textarea id="rawText" rows="16" placeholder="Paste or type your text here — chapter notes, an article, a transcript, anything goes."></textarea>
           <div class="textmeta" style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:.85rem;color:var(--mut);font-weight:600">
             <span id="textCount">0 characters</span>
             <button type="button" id="clearText" class="ghost sm">Clear</button>
@@ -933,7 +934,7 @@ button,select,input,textarea,label{touch-action:manipulation}
       <!-- RIGHT: settings -->
       <div>
         <div class="panel soft">
-          <h3>⚙️ Settings</h3>
+          <h3>Settings</h3>
           <div class="settings-grid">
             <div class="field">
               <label for="mode">Make</label>
@@ -987,151 +988,31 @@ button,select,input,textarea,label{touch-action:manipulation}
             </div>
           </div>
         </div>
-
-        <div class="focusbox">
-          <label for="focus">🎯 AI focus — what should the AI pay attention to or skip?</label>
-          <textarea id="focus" rows="3" placeholder='e.g. "Chapter 3 only", "skip examples", "emphasize formulas"'></textarea>
-          <div class="chips" id="focusChips">
-            <button type="button" class="chip-btn" data-fill="Focus only on the main concepts and definitions.">Main concepts</button>
-            <button type="button" class="chip-btn" data-fill="Focus on definitions and key terminology.">Definitions only</button>
-            <button type="button" class="chip-btn" data-fill="Focus on formulas, equations, and how to apply them.">Formulas</button>
-            <button type="button" class="chip-btn" data-fill="Skip the examples, exercises, and worked problems.">Skip examples</button>
-            <button type="button" class="chip-btn" data-fill="Focus on the most important facts likely to appear on an exam.">Exam-critical</button>
-            <button type="button" class="chip-btn" data-fill="Focus on causes, effects, and relationships between ideas.">Cause &amp; effect</button>
-          </div>
-          <div class="hint-line" style="margin-top:0">Blank = cover the whole document evenly.</div>
-        </div>
-
-        <button id="generateBtn" class="p big" type="button" style="margin-top:16px">✨ Generate</button>
       </div>
     </div>
+
+    <!-- Full-width row: focus + generate -->
+    <div class="focusbox" style="margin-top:20px">
+      <label for="focus">AI focus — what should the AI pay attention to or skip?</label>
+      <textarea id="focus" rows="3" placeholder='e.g. "Chapter 3 only", "skip examples", "emphasize formulas"'></textarea>
+      <div class="chips" id="focusChips">
+        <button type="button" class="chip-btn" data-fill="Focus only on the main concepts and definitions.">Main concepts</button>
+        <button type="button" class="chip-btn" data-fill="Focus on definitions and key terminology.">Definitions only</button>
+        <button type="button" class="chip-btn" data-fill="Focus on formulas, equations, and how to apply them.">Formulas</button>
+        <button type="button" class="chip-btn" data-fill="Skip the examples, exercises, and worked problems.">Skip examples</button>
+        <button type="button" class="chip-btn" data-fill="Focus on the most important facts likely to appear on an exam.">Exam-critical</button>
+        <button type="button" class="chip-btn" data-fill="Focus on causes, effects, and relationships between ideas.">Cause &amp; effect</button>
+      </div>
+      <div class="hint-line" style="margin-top:0">Blank = cover the whole document evenly.</div>
+    </div>
+
+    <button id="generateBtn" class="p big" type="button" style="margin-top:16px">Generate</button>
 
     <div id="progress" class="hide">
       <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
       <div class="prog-step">
         <span id="progStep">Starting…</span>
         <span class="pct" id="progPct">0%</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========== DECKS ========== -->
-  <div id="decksView" class="hide">
-    <div class="row tight" style="margin-bottom:20px">
-      <button id="mix" class="p">📚 Study all decks</button>
-      <button id="exportAll">⬇ Export all</button>
-      <button id="importAll">⬆ Import</button>
-      <button id="syncNow" class="hide">↻ Sync now</button>
-    </div>
-
-    <div id="todayBox"></div>
-
-    <div class="searchwrap"><input id="deckSearch" type="text" placeholder="🔍 Search decks and cards…" autocomplete="off"></div>
-
-    <div id="deckList" class="decklist"></div>
-  </div>
-
-  <!-- ========== NOTES LIBRARY ========== -->
-  <div id="notesLibView" class="hide">
-    <div class="searchwrap"><input id="noteSearch" type="text" placeholder="🔍 Search notes…" autocomplete="off"></div>
-    <div id="notesList" class="notes-grid"></div>
-  </div>
-
-  <!-- ========== STUDY ========== -->
-  <div id="studyView" class="hide">
-    <div class="studyhead">
-      <button id="backDecks" class="ghost icon" title="Back to decks">←</button>
-      <div class="title" id="deckTitle"></div>
-      <details class="menu">
-        <summary title="Deck settings">⚙</summary>
-        <div class="menu-panel">
-          <button id="renameBtn">✏️ Rename deck</button>
-          <button id="openEditor">📝 Edit all cards</button>
-          <button id="publishBtn">🔗 Publish publicly</button>
-          <label>🎨 Card color <input type="color" id="cardColor" value="#FFDE00"></label>
-          <button id="resetColor">↺ Reset card color</button>
-          <button id="resetProgress" class="danger">⚠ Reset all progress</button>
-          <button id="delDeck" class="danger">🗑 Delete deck</button>
-        </div>
-      </details>
-    </div>
-
-    <div class="progline">
-      <span id="cnt"></span>
-      <span id="dueInfo"></span>
-    </div>
-
-    <div class="study-grid">
-      <!-- LEFT: card -->
-      <div>
-        <div id="card">
-          <div id="inner">
-            <div class="face" id="faceF">
-              <span class="tag">Question</span>
-              <button class="spk" data-speak="front" title="Read aloud">🔊</button>
-              <span id="front"></span>
-            </div>
-            <div class="face b" id="faceB">
-              <span class="tag">Answer</span>
-              <button class="spk" data-speak="back" title="Read aloud">🔊</button>
-              <span id="back"></span>
-            </div>
-          </div>
-        </div>
-
-        <div class="navrow" id="navRow">
-          <button id="prev" class="icon" title="Previous">◀</button>
-          <button id="flip" class="p big">Show answer</button>
-          <button id="next" class="icon" title="Next">▶</button>
-        </div>
-
-        <div class="ratebar hide" id="rateBar">
-          <button id="rateAgain" class="rate r0">Again<small id="iv0"></small></button>
-          <button id="rateHard"  class="rate r1">Hard<small  id="iv1"></small></button>
-          <button id="rateGood"  class="rate r2">Good<small  id="iv2"></small></button>
-          <button id="rateEasy"  class="rate r3">Easy<small  id="iv3"></small></button>
-        </div>
-
-        <div id="summary" class="hide"></div>
-      </div>
-
-      <!-- RIGHT: side panel -->
-      <div class="study-side">
-        <div class="ttsbar">
-          <label>🔊 Voice</label>
-          <select id="voice" style="flex:1;min-width:120px"><option value="">Default</option></select>
-          <label>Speed</label>
-          <input id="rate" type="range" min="0.5" max="1.6" step="0.05" value="1">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="autoSpeak"> Auto-read
-          </label>
-        </div>
-
-        <details class="tools">
-          <summary>🛠 More tools</summary>
-          <div class="toolgrid">
-            <button id="edit">✏️ Quick edit</button>
-            <button id="openEditor2">📝 Edit all</button>
-            <button id="add">➕ Add card</button>
-            <button id="del" class="danger">🗑 Delete</button>
-            <button id="shuffle">🔀 Shuffle</button>
-            <button id="filterDue">📅 Due only</button>
-            <button id="filterAll">📚 All cards</button>
-            <button id="filterMissed">🔁 Missed</button>
-            <button id="quiz">❓ Quiz</button>
-            <button id="share">🔗 Share link</button>
-            <details class="sub">
-              <summary>⬇ Export deck</summary>
-              <div class="toolgrid">
-                <button id="csv">CSV</button>
-                <button id="anki">Anki .txt</button>
-                <button id="quizlet">Quizlet .txt</button>
-                <button id="notion">Notion .md</button>
-                <button id="printPdf">Print / PDF</button>
-              </div>
-            </details>
-          </div>
-        </details>
       </div>
     </div>
   </div>
