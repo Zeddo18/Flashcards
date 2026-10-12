@@ -47,7 +47,7 @@ body{
   background-size:22px 22px;
 }
 .wrap{
-  max-width:1600px;margin:0 auto;
+  width:100%;max-width:1920px;margin:0 auto;
   padding:24px 20px 80px;
   padding-left:max(20px,env(safe-area-inset-left));
   padding-right:max(20px,env(safe-area-inset-right));
@@ -423,7 +423,7 @@ label{font-weight:600;font-size:.9rem}
 #card{
   perspective:1400px;height:340px;cursor:pointer;
   margin:0 auto;user-select:none;
-  max-width:640px;width:100%;
+  max-width:none;width:100%;
 }
 #inner{
   position:relative;width:100%;height:100%;
@@ -636,9 +636,26 @@ details.sub .toolgrid{padding:6px 10px 10px}
 .quiz-spinner{width:46px;height:46px;border:5px solid var(--panel2);border-top-color:var(--bad);border-radius:50%;margin:auto;animation:quizSpin .8s linear infinite}
 @keyframes quizSpin{to{transform:rotate(360deg)}}
 @media(max-width:480px){
-  .quiz-type-options{grid-template-columns:1fr 1fr;gap:8px}
-  .quiz-type-choice{font-size:.82rem;padding:10px;min-height:52px}
- .quiz-type-choice input[type="checkbox"]{width:20px !important;height:20px !important;min-width:20px !important;max-width:20px !important;flex:0 0 20px !important}
+  .quiz-type-options{grid-template-columns:1fr;gap:8px}
+  .quiz-type-choice{font-size:.86rem;padding:10px 12px;min-height:48px}
+  .quiz-type-choice input[type="checkbox"]{width:20px !important;height:20px !important;min-width:20px !important;max-width:20px !important;flex:0 0 20px !important}
+}
+#quizSetupModal .modal-card{width:min(560px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain}
+#quizTypeChoices.quiz-type-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#quizTypeChoices .quiz-type-choice{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:center;width:100%;min-width:0;padding:12px;font-size:.9rem;line-height:1.25;text-transform:none;letter-spacing:0;overflow:hidden}
+#quizTypeChoices .quiz-type-choice>input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:22px!important;height:22px!important;min-width:22px!important;max-width:22px!important;min-height:22px!important;max-height:22px!important;margin:0!important;padding:0!important;flex:none!important;display:grid;place-items:center}
+#quizTypeChoices .quiz-type-choice>span{display:block;width:auto;min-width:0;color:var(--fg);font-size:inherit;font-weight:700;line-height:1.25;text-align:left;text-transform:none;letter-spacing:0;white-space:normal;word-break:normal;overflow-wrap:anywhere}
+#quizTypeChoices .quiz-type-choice:has(input:checked)>span{color:var(--acc-fg)}
+@media(max-width:520px){#quizTypeChoices.quiz-type-options{grid-template-columns:1fr}#quizTypeChoices .quiz-type-choice{min-height:48px;padding:10px 12px}}
+#accountModal .modal-card{width:min(480px,100%)}
+#accountModal .acct-head{display:flex;align-items:center;gap:16px;margin:20px 0 24px}
+#accountModal .acct-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){#accountModal .acct-actions{grid-template-columns:1fr}}
+.quiz-feedback .feedback-title{font-weight:800;margin-bottom:6px}
+.quiz-feedback .feedback-answer,.quiz-feedback .feedback-tip{margin-top:6px;line-height:1.5}
+.quiz-feedback .feedback-tip{font-weight:600}
+.quiz-match-correction{display:grid;gap:4px;margin:8px 0;padding:10px 14px;border:2px solid var(--bd);border-radius:var(--r);background:var(--panel)}
+.quiz-match-correction strong{font-weight:800}
 #quizTimerDisplay{
   display:inline-block;
   padding:3px 12px;
@@ -1232,6 +1249,7 @@ button,select,input,textarea,label{touch-action:manipulation}
     <div class="studyhead">
       <button id="backDecks" class="ghost icon" title="Back to decks">←</button>
       <div class="title" id="deckTitle"></div>
+      <button id="quiz" class="p sm" type="button">Quiz</button>
       <details class="menu">
         <summary title="Deck settings">⚙</summary>
         <div class="menu-panel">
@@ -1305,7 +1323,6 @@ button,select,input,textarea,label{touch-action:manipulation}
             <button id="filterDue">Due only</button>
             <button id="filterAll">All cards</button>
             <button id="filterMissed">Missed</button>
-            <button id="quiz">Quiz</button>
             <button id="share">Share link</button>
             <details class="sub">
               <summary>Export deck</summary>
@@ -1361,6 +1378,7 @@ button,select,input,textarea,label{touch-action:manipulation}
     <div class="studyhead">
       <button id="noteBack" class="ghost icon">←</button>
       <div class="title" id="noteTitle">Study notes</div>
+      <button id="noteQuizBtn" class="p sm" type="button">Quiz this note</button>
       <details class="menu">
         <summary title="Note actions">⚙</summary>
         <div class="menu-panel">
@@ -1647,7 +1665,11 @@ $("tabCreate").onclick = () => { statusEl.textContent = ""; show("create"); };
 $("tabDecks").onclick  = () => { statusEl.textContent = ""; show("decks"); };
 $("tabNotes").onclick  = () => { statusEl.textContent = ""; show("notesLib"); };
 $("backDecks").onclick = () => show("decks");
-$("quizBack").onclick = () => { clearInterval(quizTimerInterval); show("study"); };
+$("quizBack").onclick = () => {
+  clearInterval(quizTimerInterval);
+  const source = (quizState && quizState.source) || quizSource;
+  show(source && source.kind === "note" ? "note" : "study");
+};
 $("noteBack").onclick  = () => show("notesLib");
 $("again").onclick     = () => { statusEl.textContent = ""; show("create"); };
 if (matchMedia("(pointer: coarse)").matches) {
@@ -2970,6 +2992,7 @@ $("share").onclick = async () => {
 
 /* ========== quiz (7 types) ========== */
 let quizState = null;
+let quizSource = null;
 let quizTimerInterval = null;
 
 function quizTypeLabel(t) {
@@ -3058,13 +3081,19 @@ function buildQuestion(type, card, pool) {
   return { card, prompt: card.front, correct: card.back };
 }
 
-function openQuizSetup() {
-  if (!cur) return;
-  const pool = cur.cards.filter(c => c.front && c.back);
-  if (pool.length < 2) {
+function openQuizSetup(source = null) {
+  source = source || (cur ? { kind: "deck", id: cur.id, title: cur.name, cards: cur.cards } : null);
+  if (!source) return;
+  const pool = (source.cards || []).filter(c => c.front && c.back);
+  if (source.kind === "note" && (source.sourceText || "").trim().length < 50) {
+    statusEl.textContent = "This note needs at least 50 characters to make a useful quiz.";
+    return;
+  }
+  if (source.kind !== "note" && pool.length < 2) {
     statusEl.textContent = "You need at least 2 cards for a quiz.";
     return;
   }
+  quizSource = source;
   $("quizSetupMsg").textContent = "";
   $("quizSetupModal").classList.remove("hide");
   setTimeout(() => $("quizTypeChoices").querySelector("input").focus(), 50);
@@ -3096,10 +3125,11 @@ $("quizStartBtn").onclick = async () => {
   $("quizLoadingMsg").textContent = "Preparing " + count + " questions…";
   $("quizLoading").classList.remove("hide");
   try {
-    const questions = await prepareQuizQuestions(types, count);
+    const source = quizSource;
+    const questions = await prepareQuizQuestions(types, count, source);
     $("quizSetupModal").classList.add("hide");
     message.textContent = "";
-    startQuiz(types.length > 1 ? "mixed" : types[0], timer, questions, types);
+    startQuiz(types.length > 1 ? "mixed" : types[0], timer, questions, types, source);
   } catch (error) {
     message.textContent = error.message || "Could not prepare this quiz. Please try again.";
   } finally {
@@ -3109,26 +3139,24 @@ $("quizStartBtn").onclick = async () => {
   }
 };
 
-async function prepareQuizQuestions(types, count) {
-  const pool = cur.cards.filter(c => c.front && c.back);
+async function prepareQuizQuestions(types, count, source = quizSource) {
+  const pool = (source && source.cards ? source.cards : []).filter(c => c.front && c.back);
   const questions = [];
   const base = Math.floor(count / types.length), remainder = count % types.length;
   for (let i = 0; i < types.length; i++) {
     const type = types[i], typeCount = base + (i < remainder ? 1 : 0);
     $("quizLoadingMsg").textContent = "Creating " + quizTypeLabel(type) + " questions (" + (i + 1) + " of " + types.length + ")…";
-    if (type === "tf") {
-      const chosen = pool.slice().sort(() => Math.random() - .5).slice(0, typeCount);
-      questions.push(...chosen.map(card => buildQuestion("tf", card, pool)));
-    } else {
-      const generated = await generateQuizQuestions(type, typeCount);
-      questions.push(...generated.map(question => ({ ...question, type })));
-    }
+    const generated = await generateQuizQuestions(type, typeCount, source);
+    questions.push(...generated.map(question => ({ ...question, type })));
   }
   if (!questions.length) throw new Error("No questions were created.");
   return questions.sort(() => Math.random() - .5);
 }
-async function generateQuizQuestions(type, count) {
-  const cards = cur.cards.filter(c => c.front && c.back);
+async function generateQuizQuestions(type, count, source = quizSource) {
+  const text = source && source.kind === "note"
+    ? source.sourceText
+    : JSON.stringify(((source && source.cards) || []).filter(c => c.front && c.back).map(c => ({ front: c.front, back: c.back })));
+  if (!text || text.trim().length < 20) throw new Error("There is not enough study material to create a quiz.");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 50000);
   let response;
@@ -3141,7 +3169,7 @@ async function generateQuizQuestions(type, count) {
         mode: "quiz",
         type,
         count,
-        text: JSON.stringify(cards.map(c => ({ front: c.front, back: c.back })))
+        text: text.slice(0, 80000)
       })
     });
   } catch (error) {
@@ -3160,7 +3188,7 @@ async function generateQuizQuestions(type, count) {
     for (let i = 0; i < shuffled.length; i += 4) {
       const chunk = shuffled.slice(i, i + 4);
       if (chunk.length < 2) continue;
-      const lefts = chunk.map((p, index) => ({ id: "pair-" + i + "-" + index, text: p.term }));
+      const lefts = chunk.map((p, index) => ({ id: "pair-" + i + "-" + index, text: p.term, answerText: p.definition, tip: p.tip || p.hint || "" }));
       const rights = chunk.map((p, index) => ({ id: lefts[index].id, text: p.definition }))
         .sort(() => Math.random() - .5);
       sets.push({ lefts, rights });
@@ -3173,8 +3201,8 @@ async function generateQuizQuestions(type, count) {
   return questions;
 }
 
-function startQuiz(type, timerSec, questions, types) {
-  quizState = { type, types, timerSec, questions, idx: 0, score: 0, answers: [] };
+function startQuiz(type, timerSec, questions, types, source = quizSource) {
+  quizState = { type, types, timerSec, questions, source, idx: 0, score: 0, answers: [] };
 
   $("quizTitle").textContent = "Quiz — " + quizTypeLabel(type);
   $("quizScoreLive").textContent = "Score: 0";
@@ -3430,6 +3458,34 @@ function playQuizSound(correct) {
   } catch {}
 }
 
+function quizTip(q) {
+  return String((q && (q.tip || q.hint || q.explanation)) || "Review the key idea in the source material, then connect it to the question clue.").trim();
+}
+function addQuizFeedback(box, q, isCorrect, customNote) {
+  const fb = document.createElement("div");
+  fb.className = "quiz-feedback " + (isCorrect ? "ok" : "no");
+  if (isCorrect) {
+    fb.textContent = customNote || "Correct!";
+  } else {
+    const title = document.createElement("div");
+    title.className = "feedback-title";
+    title.textContent = "Not quite";
+    const answer = document.createElement("div");
+    answer.className = "feedback-answer";
+    answer.textContent = "Correct answer: " + String((q && q.correct) || "See the source material");
+    const tip = document.createElement("div");
+    tip.className = "feedback-tip";
+    tip.textContent = "Tip: " + quizTip(q);
+    fb.append(title, answer, tip);
+    if (customNote) {
+      const note = document.createElement("div");
+      note.className = "feedback-answer";
+      note.textContent = customNote;
+      fb.appendChild(note);
+    }
+  }
+  box.appendChild(fb);
+}
 function submitAnswer(userAnswer, isCorrect, customNote, customEl) {
   const s = quizState;
   if (!s) return;
@@ -3454,19 +3510,9 @@ function submitAnswer(userAnswer, isCorrect, customNote, customEl) {
       if (b.textContent === q.correct) b.classList.add("ok");
       else if (b.textContent === userAnswer && !isCorrect) b.classList.add("no");
     });
-    const fb = document.createElement("div");
-    fb.className = "quiz-feedback " + (isCorrect ? "ok" : "no");
-    fb.textContent = (isCorrect ? "Correct!" : "Correct answer: " + q.correct) + (q.explanation ? " — " + q.explanation : "");
-    box.appendChild(fb);
-  } else {
-    const fb = document.createElement("div");
-    fb.className = "quiz-feedback " + (isCorrect ? "ok" : "no");
-    fb.textContent = customNote
-      ? customNote + (!isCorrect && q.explanation ? " — " + q.explanation : "")
-      : (isCorrect ? "Correct!" : "Correct answer: " + q.correct) + (q.explanation ? " — " + q.explanation : "");
-    box.appendChild(fb);
-    if (customEl) box.appendChild(customEl);
   }
+  addQuizFeedback(box, q, !!isCorrect, customNote);
+  if (customEl) box.appendChild(customEl);
 
   const next = document.createElement("button");
   next.className = "p big";
@@ -3496,7 +3542,21 @@ function submitMatch(state) {
     const picked = state[leftId];
     const isRight = picked === leftId;
     row.classList.add(isRight ? "ok" : "no");
+    const left = q.lefts.find(item => item.id === leftId);
     if (isRight) correctPairs++;
+    else {
+      const correction = document.createElement("div");
+      correction.className = "quiz-match-correction";
+      const answer = document.createElement("strong");
+      answer.textContent = (left ? left.text : "Term") + " → " + (left ? left.answerText : "correct definition unavailable");
+      correction.appendChild(answer);
+      if (left && left.tip) {
+        const tip = document.createElement("span");
+        tip.textContent = "Tip: " + left.tip;
+        correction.appendChild(tip);
+      }
+      row.appendChild(correction);
+    }
   });
 
   const totalPairs = q.lefts.length;
@@ -3511,10 +3571,7 @@ function submitMatch(state) {
     isMatch: true
   });
 
-  const fb = document.createElement("div");
-  fb.className = "quiz-feedback " + (fullCredit ? "ok" : "no");
-  fb.textContent = correctPairs + " of " + totalPairs + " pairs matched correctly";
-  box.appendChild(fb);
+  addQuizFeedback(box, { correct: correctPairs + " of " + totalPairs + " pairs matched", tip: "Match each term to the definition that describes its meaning or role." }, fullCredit, correctPairs + " of " + totalPairs + " pairs matched correctly");
 
   const next = document.createElement("button");
   next.className = "p big";
@@ -3577,7 +3634,7 @@ function endQuiz() {
     body.className = "quiz-review-body";
     const qLine = document.createElement("div");
     qLine.className = "quiz-review-q";
-    qLine.textContent = a.question.prompt;
+    qLine.textContent = a.question.prompt || a.question.term || "Matching question";
     const aLine = document.createElement("div");
     aLine.className = "quiz-review-a";
     if (a.correct) {
@@ -3586,6 +3643,12 @@ function endQuiz() {
       aLine.innerHTML = 'Your answer: <span class="wrong">' + escHtml(a.userAnswer) + '</span> · Correct: <span class="right">' + escHtml(a.question.correct) + '</span>';
     }
     body.append(qLine, aLine);
+    if (!a.correct) {
+      const tipLine = document.createElement("div");
+      tipLine.className = "quiz-review-a";
+      tipLine.textContent = "Tip: " + quizTip(a.question);
+      body.appendChild(tipLine);
+    }
     item.append(num, body);
     review.appendChild(item);
   });
@@ -3594,20 +3657,21 @@ function endQuiz() {
   const btns = document.createElement("div");
   btns.className = "row center";
   btns.style.marginTop = "24px";
+  const retrySource = s.source;
   const retry = document.createElement("button");
   retry.className = "p";
   retry.textContent = "Retry quiz";
-  retry.onclick = openQuizSetup;
+  retry.onclick = () => openQuizSetup(retrySource);
   const done = document.createElement("button");
-  done.textContent = "Back to deck";
-  done.onclick = () => show("study");
+  done.textContent = retrySource && retrySource.kind === "note" ? "Back to note" : "Back to deck";
+  done.onclick = () => show(retrySource && retrySource.kind === "note" ? "note" : "study");
   btns.append(retry, done);
   box.appendChild(btns);
 
   quizState = null;
 }
 
-$("quiz").onclick = openQuizSetup;
+$("quiz").onclick = () => openQuizSetup();
 
 /* ========== notes ========== */
 function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -3655,6 +3719,7 @@ function renderNotesLib() {
       btns.appendChild(b);
     };
     mk("Open", "p", () => openNote(n.id));
+    mk("Quiz", "", () => startNoteQuiz(n.id));
     mk("Rename", "", () => {
       const t = prompt("New title:", n.title);
       if (!t || !t.trim()) return;
@@ -3680,6 +3745,12 @@ function openNote(id) {
   $("out").innerHTML = renderMd(n.md);
   $("noteView").dataset.id = id;
   show("note");
+}
+$("noteQuizBtn").onclick = () => startNoteQuiz($("noteView").dataset.id);
+function startNoteQuiz(id) {
+  const n = notesLib.find(x => x.id === id);
+  if (!n) return;
+  openQuizSetup({ kind: "note", id: n.id, title: n.title, sourceText: n.md, cards: [] });
 }
 $("copyNote").onclick = async () => {
   const n = notesLib.find(x => x.id === $("noteView").dataset.id); if (!n) return;
