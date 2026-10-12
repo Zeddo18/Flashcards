@@ -1548,6 +1548,7 @@ button,select,input,textarea,label{touch-action:manipulation}
   };
   window.BroadcastChannel.prototype = Original.prototype;
 })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3536,6 +3537,7 @@ function submitMatch(state) {
   box.querySelectorAll("button, select").forEach(el => el.disabled = true);
 
   let correctPairs = 0;
+  const wrongPairs = [];
   const rows = box.querySelectorAll(".quiz-match-row");
   rows.forEach(row => {
     const leftId = row.dataset.leftId;
@@ -3550,6 +3552,8 @@ function submitMatch(state) {
       const answer = document.createElement("strong");
       answer.textContent = (left ? left.text : "Term") + " → " + (left ? left.answerText : "correct definition unavailable");
       correction.appendChild(answer);
+      const selected = q.rights.find(right => right.id === picked);
+      wrongPairs.push({ term: left ? left.text : "Term", answer: left ? left.answerText : "Correct definition unavailable", picked: selected ? selected.text : "No answer selected", tip: left && left.tip ? left.tip : "Focus on the clue that defines this term." });
       if (left && left.tip) {
         const tip = document.createElement("span");
         tip.textContent = "Tip: " + left.tip;
@@ -3564,14 +3568,16 @@ function submitMatch(state) {
   if (fullCredit) s.score++;
   playQuizSound(fullCredit);
 
+  const missedAnswer = wrongPairs.map(pair => pair.term + " → " + pair.answer).join("; ");
+  const missedTip = wrongPairs.map(pair => pair.term + ": " + pair.tip).join(" ");
   s.answers.push({
-    question: { prompt: "Matching set (" + totalPairs + " pairs)", correct: totalPairs + " correct pairs" },
-    userAnswer: correctPairs + " / " + totalPairs + " correct",
+    question: { prompt: "Matching set (" + totalPairs + " pairs)", correct: missedAnswer || totalPairs + " pairs matched", tip: missedTip || "Match each term to the definition that describes its meaning or role." },
+    userAnswer: wrongPairs.map(pair => pair.term + " → " + pair.picked).join("; ") || correctPairs + " / " + totalPairs + " correct",
     correct: fullCredit,
     isMatch: true
   });
 
-  addQuizFeedback(box, { correct: correctPairs + " of " + totalPairs + " pairs matched", tip: "Match each term to the definition that describes its meaning or role." }, fullCredit, correctPairs + " of " + totalPairs + " pairs matched correctly");
+  addQuizFeedback(box, { correct: missedAnswer || correctPairs + " of " + totalPairs + " pairs matched", tip: missedTip || "Match each term to the definition that describes its meaning or role." }, fullCredit, correctPairs + " of " + totalPairs + " pairs matched correctly");
 
   const next = document.createElement("button");
   next.className = "p big";
