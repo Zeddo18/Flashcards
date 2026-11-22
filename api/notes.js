@@ -5,6 +5,8 @@
 // card style (qa/cloze/tf), output language, and notes detail level.
 // Falls back between models on transient errors, aborts before the platform timeout.
 
+const { originMatches, validatePayload, takeQuota, applySecurityHeaders } = require("../lib/notes-security");
+
 const MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
 const HARD_LIMIT_MS = 45000;
 const PER_CALL_MS   = 22000;
@@ -52,8 +54,7 @@ async function askGemini(prompt, generationConfig, imgs = []) {
           if (text) return { ok: true, text };
           last = { status: 502, message: "The AI returned nothing. Try again." };
         } else {
-          const msg = data?.error?.message || "AI request failed.";
-          last = { status: r.status, message: msg };
+          last = { status: r.status, message: "The AI service could not complete this request." };
           if (r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404) {
             return { ok: false, ...last };
           }
@@ -62,7 +63,7 @@ async function askGemini(prompt, generationConfig, imgs = []) {
         const aborted = e.name === "AbortError";
         last = {
           status: aborted ? 504 : 500,
-          message: aborted ? "The AI took too long to respond." : "Server error: " + e.message
+          message: aborted ? "The AI took too long to respond." : "The AI service is temporarily unavailable."
         };
       } finally {
         clearTimeout(timer);
@@ -133,17 +134,18 @@ function extractQuizObject(raw) {
 }
 
 module.exports = async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "content-type");
+  applySecurityHeaders(req, res);
+  if (!originMatches(req)) {
+    return res.status(403).json({ error: "Cross-site AI requests are not allowed." });
+  }
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
-  const { text, pages, detail, difficulty, focus, mode, count, images, lang, style, type } = req.body || {};
-  const t = typeof text === "string" ? text : "";
-  const imgs = Array.isArray(images)
-    ? images.filter(x => typeof x === "string").slice(0, 8)
-    : [];
+  const checked = validatePayload(req);
+  if (checked.status) return res.status(checked.status).json({ error: checked.error });
+  const { text, pages, detail, difficulty, focus, mode, count, images, lang, style, type } = checked.data;
+  const t = text;
+  const imgs = images;
 
   const isQuiz = mode === "quiz";
   const quizTypes = ["mc", "tf", "fib", "typing", "ident", "enum", "match"];
@@ -217,11 +219,22 @@ module.exports = async (req, res) => {
     ? { maxOutputTokens: 8192, responseMimeType: "application/json", temperature: 0.5 }
     : { maxOutputTokens: 4096, temperature: 0.4 };
 
-  const result = await askGemini(
-    (isCards ? styleTxt : "") + langLine + prompt,
-    generationConfig,
-    imgs
-  );
+  // Instance-local protection; distributed enforcement needs Vercel WAF.
+  const quota = takeQuota(req);
+  if (!quota.allowed) {
+    res.setHeader("Retry-After", String(quota.retryAfter));
+    return res.status(429).json({ error: "Too many AI requests. Please try again shortly." });
+  }
+  let result;
+  try {
+    result = await askGemini(
+      (isCards ? styleTxt : "") + langLine + prompt,
+      generationConfig,
+      imgs
+    );
+  } finally {
+    quota.release();
+  }
 
   if (!result.ok) {
     const busy = result.status === 429 || result.status === 503 ||
