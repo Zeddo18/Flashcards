@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { Readable } = require('node:stream');
+const zlib = require('node:zlib');
 const { _testing } = require('../api/fetch-url');
 const { checkedUrl, rewriteGoogleUrl, isPublicAddress, createHandler } = _testing;
 
@@ -159,12 +160,12 @@ test('bounds text and PDF bodies both with and without content-length', async ()
   assert.equal(oversizePdf.res.code,413);
 });
 
-test('rejects unsupported types, fake PDFs and unexpected compression', async () => {
+test('rejects unsupported types, fake PDFs and unknown compression', async () => {
   const binary = await invoke('https://public.org/file.zip', [response(200,{'content-type':'application/zip'})]);
   assert.equal(binary.res.code, 422);
   const fakePdf = await invoke('https://public.org/file.pdf', [response(200,{'content-type':'application/pdf'},'<html>fake</html>')]);
   assert.equal(fakePdf.res.code, 422);
-  const compressed = await invoke('https://public.org/', [response(200,{'content-type':'text/plain','content-encoding':'gzip'})]);
+  const compressed = await invoke('https://public.org/', [response(200,{'content-type':'text/plain','content-encoding':'weird'})]);
   assert.equal(compressed.res.code, 422);
 });
 
@@ -228,4 +229,32 @@ test('PDF extension remains supported across redirects and unexpected text MIME'
   ]);
   assert.equal(mislabeled.res.code, 200);
   assert.equal(mislabeled.res.body.kind,'pdf');
+});
+
+
+test('safely decodes compressed articles and PDFs without changing the response format', async () => {
+  const article = 'Study notes '.repeat(40);
+  for (const [encoding, compress] of [
+    ['gzip', zlib.gzipSync], ['br', zlib.brotliCompressSync], ['deflate', zlib.deflateSync]
+  ]) {
+    const { res } = await invoke('https://public.org/article', [
+      response(200, {'content-type':'text/plain', 'content-encoding':encoding}, compress(article))
+    ]);
+    assert.equal(res.code, 200, encoding);
+    assert.equal(res.body.kind, 'text');
+    assert.equal(res.body.text, article.trim());
+  }
+  const pdf = await invoke('https://public.org/report.pdf', [
+    response(200, {'content-type':'application/pdf', 'content-encoding':'gzip'}, zlib.gzipSync('%PDF-1.7\nContent'))
+  ]);
+  assert.equal(pdf.res.code, 200);
+  assert.equal(pdf.res.body.kind, 'pdf');
+});
+
+test('rejects decompression bombs after expansion instead of buffering them', async () => {
+  const bomb = zlib.gzipSync('A'.repeat(4 * 1024 * 1024 + 100));
+  const { res } = await invoke('https://public.org/file.txt', [
+    response(200, {'content-type':'text/plain', 'content-encoding':'gzip'}, bomb)
+  ]);
+  assert.equal(res.code, 413);
 });

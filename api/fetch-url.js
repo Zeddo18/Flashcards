@@ -4,6 +4,9 @@ const http = require('node:http');
 const https = require('node:https');
 const dns = require('node:dns');
 const net = require('node:net');
+const zlib = require('node:zlib');
+const { Transform, Writable } = require('node:stream');
+const { pipeline } = require('node:stream/promises');
 
 const REQUEST_TIMEOUT_MS = 20000;
 const MAX_REDIRECTS = 5;
@@ -160,23 +163,40 @@ function getResponse(url, ip, family, signal, requester) {
     req.end();
   });
 }
-async function receiveBody(response, limit) {
+async function receiveBody(response, limit, encoding) {
   const claimed = Number(response.headers['content-length']);
   if (Number.isFinite(claimed) && claimed > limit) {
     response.destroy();
     throw new ImportError(413, 'That document is too large to import. Download and upload it instead.');
   }
-  let total = 0;
   const chunks = [];
-  for await (const chunk of response) {
-    total += chunk.length;
-    if (total > limit) {
-      response.destroy();
-      throw new ImportError(413, 'That document is too large to import. Download and upload it instead.');
-    }
-    chunks.push(chunk);
+  let decodedBytes = 0;
+  function boundedStream() {
+    let total = 0;
+    return new Transform({
+      transform(chunk, _encoding, done) {
+        total += chunk.length;
+        if (total > limit) return done(new ImportError(413,
+          'That document is too large to import. Download and upload it instead.'));
+        done(null, chunk);
+      }
+    });
   }
-  return Buffer.concat(chunks, total);
+  const collector = new Writable({
+    write(chunk, _encoding, done) { chunks.push(chunk); decodedBytes += chunk.length; done(); }
+  });
+  // Bound both wire bytes and decoded bytes to prevent compression bombs.
+  const streams = [response, boundedStream()];
+  if (encoding === 'gzip') streams.push(zlib.createGunzip());
+  if (encoding === 'br') streams.push(zlib.createBrotliDecompress());
+  if (encoding === 'deflate') streams.push(zlib.createInflate());
+  streams.push(boundedStream(), collector);
+  try { await pipeline(...streams); }
+  catch (error) {
+    if (error instanceof ImportError) throw error;
+    throw new ImportError(502, 'The website returned an unreadable document.');
+  }
+  return Buffer.concat(chunks, decodedBytes);
 }
 async function download(url, { lookup, requestHttp, requestHttps }, signal) {
   let current = url;
@@ -226,7 +246,7 @@ async function download(url, { lookup, requestHttp, requestHttps }, signal) {
     }
     const ct = String(response.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
     const encoding = String(response.headers['content-encoding'] || 'identity').toLowerCase();
-    if (encoding !== 'identity') {
+    if (!['identity', 'gzip', 'br', 'deflate'].includes(encoding)) {
       response.destroy();
       throw new ImportError(422, 'The website returned an unsupported compressed document.');
     }
@@ -239,7 +259,7 @@ async function download(url, { lookup, requestHttp, requestHttps }, signal) {
       response.destroy();
       throw new ImportError(422, 'That URL did not return a supported text or PDF document.');
     }
-    const bytes = await receiveBody(response, pdfCandidate ? MAX_PDF_BYTES : MAX_TEXT_BYTES);
+    const bytes = await receiveBody(response, pdfCandidate ? MAX_PDF_BYTES : MAX_TEXT_BYTES, encoding);
     if (pdfCandidate && bytes.subarray(0, 5).toString('ascii') === '%PDF-') {
       return { kind: 'pdf', data: bytes.toString('base64'), name: safeFilename(originalPdf ? url : current) };
     }
