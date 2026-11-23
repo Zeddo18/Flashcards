@@ -1512,7 +1512,7 @@ button,select,input,textarea,label{touch-action:manipulation}
       <div class="acct-info">
         <div class="acct-name" id="acctName">—</div>
         <div class="acct-email" id="acctEmail">—</div>
-        <div class="acct-badge">Synced</div>
+        <div class="acct-badge" id="acctSyncState">Cloud sync not verified</div>
       </div>
     </div>
 
@@ -1554,6 +1554,7 @@ button,select,input,textarea,label{touch-action:manipulation}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/supabase-config.js"></script>
 <script src="/cloud.js"></script>
+<script src="/lib/sync-journal.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -2030,45 +2031,45 @@ $("authEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("auth
 async function pullAndMerge() {
   if (!user || !cloudReady) return;
   const account = captureAccount();
-  statusEl.textContent = "Syncing with cloud…";
+  setCloudSyncStatus("Syncing with cloud…");
   try {
-    const cloudDecks = await Cloud.listMyDecks();
-    if (!accountIsCurrent(account)) return;
-    const deckById = new Map(cloudDecks.map(d => [d.id, d]));
-    const localDecksOnly = [];
-    decks.forEach(d => { if (!deckById.has(d.id)) localDecksOnly.push(d); deckById.set(d.id, d); });
-    if (localDecksOnly.length) {
-      try { await Cloud.bulkUpsert(localDecksOnly); } catch (e) { if (!accountIsCurrent(account)) return; console.warn("deck bulk upsert failed", e); }
-      if (!accountIsCurrent(account)) return;
-    }
-    const mergedDecks = [];
-    deckById.forEach(d => mergedDecks.push(d));
-    mergedDecks.sort((a, b) => (b.created || 0) - (a.created || 0));
-    decks = mergedDecks;
-    saveDecks();
-    $("nDecks").textContent = decks.length;
-    if (cur) { const still = decks.find(d => d.id === cur.id); if (still) cur = still; }
-    renderDecks();
-
-    const cloudNotes = await Cloud.listMyNotes();
-    if (!accountIsCurrent(account)) return;
-    const noteById = new Map(cloudNotes.map(n => [n.id, n]));
-    const localNotesOnly = [];
-    notesLib.forEach(n => { if (!noteById.has(n.id)) localNotesOnly.push(n); noteById.set(n.id, n); });
-    if (localNotesOnly.length) {
-      try { await Cloud.bulkUpsertNotes(localNotesOnly); } catch (e) { if (!accountIsCurrent(account)) return; console.warn("note bulk upsert failed", e); }
-      if (!accountIsCurrent(account)) return;
-    }
-    const mergedNotes = [];
-    noteById.forEach(n => mergedNotes.push(n));
-    mergedNotes.sort((a, b) => (b.created || 0) - (a.created || 0));
-    notesLib = mergedNotes;
-    saveNotes();
-    $("nNotes").textContent = notesLib.length;
-    renderNotesLib();
-
-    statusEl.textContent = "Synced. " + cloudDecks.length + " deck(s), " + cloudNotes.length + " note(s).";
-  } catch (e) { if (accountIsCurrent(account)) statusEl.textContent = "Cloud sync failed: " + e.message; }
+    const result = await getSyncJournal().sync(account,
+      () => ({ decks, notes: notesLib }),
+      (entity, items) => {
+        if (!accountIsCurrent(account)) return;
+        if (entity === "decks") {
+          decks = items;
+          if (saveDecks() === false) throw new Error("Local deck storage failed. Export a backup before reloading.");
+          $("nDecks").textContent = decks.length;
+          if (cur) { const still = decks.find(d => d.id === cur.id); if (still) cur = still; }
+          renderDecks();
+        } else {
+          notesLib = items;
+          if (saveNotes() === false) throw new Error("Local note storage failed. Export a backup before reloading.");
+          $("nNotes").textContent = notesLib.length;
+          renderNotesLib();
+        }
+      });
+    if (!result || !accountIsCurrent(account)) return;
+    if (result.failed) setCloudSyncStatus("Cloud synchronization failed. Changes remain queued locally; use Sync now to retry.");
+    else if (result.conflicts) setCloudSyncStatus("Saved locally; " + result.conflicts + " conflict(s) preserved in this account's sync journal. Cloud copies were not overwritten.");
+    else if (result.pending) setCloudSyncStatus("Saved locally; " + result.pending + " change(s) awaiting upload.");
+    else setCloudSyncStatus("Successfully synchronized.");
+  } catch (e) {
+    if (accountIsCurrent(account)) setCloudSyncStatus("Cloud synchronization failed: " + e.message);
+  }
+}
+function setCloudSyncStatus(message) {
+  statusEl.textContent = message;
+  $("acctSyncState").textContent = message;
+}
+function getSyncJournal() {
+  if (!getSyncJournal.instance) getSyncJournal.instance = window.FCSyncJournal.create({
+    storage: localStorage, cloud: Cloud, isCurrent: accountIsCurrent,
+    lock: window.navigator && window.navigator.locks
+      ? (name, work) => window.navigator.locks.request(name, work) : null
+  });
+  return getSyncJournal.instance;
 }
 Cloud.onAuth(u => {
   const wasUserId = user ? user.id : null;
@@ -2085,6 +2086,7 @@ Cloud.onAuth(u => {
   $("nDecks").textContent = decks.length;
   $("nNotes").textContent = notesLib.length;
   renderAuth();
+  $("acctSyncState").textContent = user ? "Cloud sync not verified" : "Guest mode — saved on this device";
   $("syncNow").classList.toggle("hide", !user);
   renderDecks();
   renderNotesLib();
@@ -2097,22 +2099,21 @@ Cloud.onAuth(u => {
   }
 });
 $("syncNow").onclick = pullAndMerge;
-async function pushDeck(deck) {
+async function queueCloudChange(entity, type, value) {
   if (!user || !cloudReady) return;
-  try { await Cloud.upsertDeck(deck); } catch (e) { console.warn("push failed", e); }
+  const account = captureAccount();
+  try {
+    getSyncJournal().enqueue(account, entity, type, value);
+    setCloudSyncStatus("Saved locally; changes awaiting upload.");
+    await pullAndMerge();
+  } catch (e) {
+    if (accountIsCurrent(account)) setCloudSyncStatus("Cloud synchronization failed: " + e.message);
+  }
 }
-async function pushDelete(id) {
-  if (!user || !cloudReady) return;
-  try { await Cloud.deleteDeck(id); } catch (e) { console.warn("delete failed", e); }
-}
-async function pushNote(note) {
-  if (!user || !cloudReady) return;
-  try { await Cloud.upsertNote(note); } catch (e) { console.warn("push note failed", e); }
-}
-async function pushNoteDelete(id) {
-  if (!user || !cloudReady) return;
-  try { await Cloud.deleteNote(id); } catch (e) { console.warn("delete note failed", e); }
-}
+async function pushDeck(deck) { return queueCloudChange("decks", "upsert", deck); }
+async function pushDelete(id) { return queueCloudChange("decks", "delete", id); }
+async function pushNote(note) { return queueCloudChange("notes", "upsert", note); }
+async function pushNoteDelete(id) { return queueCloudChange("notes", "delete", id); }
 
 /* ========== source tabs ========== */
 function setSource(mode) {
@@ -2563,7 +2564,7 @@ async function generate() {
       $("rawText").value = ""; $("rawText").oninput();
       urlData = null; $("urlInput").value = ""; $("urlResult").innerHTML = "";
       startSession(deck, "all");
-      statusEl.textContent = 'Saved as "' + deck.name + '".' + (user ? " Synced to your account." : " Sign in to sync across devices.");
+      statusEl.textContent = 'Saved as "' + deck.name + '".' + (user ? " Saved locally; check cloud sync status." : " Sign in to sync across devices.");
     } else {
       notesMd = data.notes;
       $("genNoteTitle").textContent = deckName || "Study notes";
@@ -3843,7 +3844,7 @@ function saveCurrentNotes() {
   notesLib.unshift(note);
   saveNotes(); pushNote(note);
   $("nNotes").textContent = notesLib.length;
-  statusEl.textContent = 'Saved "' + title.trim() + '" to your library' + (user ? " — synced to your account." : ".");
+  statusEl.textContent = 'Saved "' + title.trim() + '" to your library' + (user ? " — saved locally; check cloud sync status." : ".");
 }
 $("saveNewNote").onclick = saveCurrentNotes;
 $("saveBtnBig").onclick  = saveCurrentNotes;
@@ -3922,3 +3923,5 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
+
+
