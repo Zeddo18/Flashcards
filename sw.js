@@ -4,14 +4,15 @@
    - Never caches API calls or Supabase auth
    - Caches Google Fonts + CDN scripts for offline use */
 
-const CACHE  = "flushcard-v7";
-const EXT    = "flushcard-ext-v7";
+const CACHE  = "flushcard-v8";
+const EXT    = "flushcard-ext-v8";
 
 const SHELL = [
   "/",
   "/index.html",
   "/manifest.json",
   "/cloud.js",
+  "/lib/sync-journal.js",
   "/supabase-config.js",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -97,3 +98,5 @@ self.addEventListener("fetch", e => {
     }
   })());
 });
+
+
