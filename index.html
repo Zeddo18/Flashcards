@@ -1584,6 +1584,39 @@ let sourceMode = "pdf";
 let pdfFiles = [];
 let urlData = null;
 let cloudReady = false;
+let accountGeneration = 0;
+function captureAccount() {
+  return { userId: user ? user.id : null, generation: accountGeneration };
+}
+function accountIsCurrent(account) {
+  return account.generation === accountGeneration &&
+    account.userId === (user ? user.id : null);
+}
+
+// Clear live private state only; each account's stored library remains intact.
+function clearPrivateState() {
+  cur = null; cards = []; idx = 0; flipped = false; session = null;
+  editTarget = null; editCards = []; editReturn = "study";
+  notesMd = ""; quizState = null; quizSource = null;
+  clearInterval(quizTimerInterval); quizTimerInterval = null;
+  clearInterval(progAiTimer); progAiTimer = null;
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  ["front", "back", "deckTitle", "cnt", "dueInfo", "editTitle", "editHint",
+   "editList", "qbox", "out", "out2", "noteTitle", "genNoteTitle",
+   "summary", "quizProg", "quizTimerDisplay", "quizScoreLive",
+   "quizSetupMsg", "quizLoadingMsg"].forEach(id => { $(id).textContent = ""; });
+  $("noteView").removeAttribute("data-id");
+  $("card").classList.remove("flip");
+  $("quizProgFill").style.width = "0%";
+  ["quizSetupModal", "quizLoading", "summary", "rateBar", "progress"].forEach(id => $(id).classList.add("hide"));
+  $("quizStartBtn").disabled = false; $("quizStartBtn").textContent = "Start quiz";
+  busy = false; $("generateBtn").disabled = false;
+  pdfFiles = []; urlData = null;
+  $("file").value = ""; $("rawText").value = ""; $("rawText").oninput();
+  $("urlInput").value = ""; $("urlResult").textContent = "";
+  renderFileList();
+  show("create");
+}
 
 (function migrateIds() {
   const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1996,14 +2029,17 @@ $("authEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("auth
 /* ========== cloud sync ========== */
 async function pullAndMerge() {
   if (!user || !cloudReady) return;
+  const account = captureAccount();
   statusEl.textContent = "Syncing with cloud…";
   try {
     const cloudDecks = await Cloud.listMyDecks();
+    if (!accountIsCurrent(account)) return;
     const deckById = new Map(cloudDecks.map(d => [d.id, d]));
     const localDecksOnly = [];
-    decks.forEach(d => { if (!deckById.has(d.id)) localDecksOnly.push(d); else deckById.set(d.id, d); });
+    decks.forEach(d => { if (!deckById.has(d.id)) localDecksOnly.push(d); deckById.set(d.id, d); });
     if (localDecksOnly.length) {
-      try { await Cloud.bulkUpsert(localDecksOnly); } catch (e) { console.warn("deck bulk upsert failed", e); }
+      try { await Cloud.bulkUpsert(localDecksOnly); } catch (e) { if (!accountIsCurrent(account)) return; console.warn("deck bulk upsert failed", e); }
+      if (!accountIsCurrent(account)) return;
     }
     const mergedDecks = [];
     deckById.forEach(d => mergedDecks.push(d));
@@ -2015,11 +2051,13 @@ async function pullAndMerge() {
     renderDecks();
 
     const cloudNotes = await Cloud.listMyNotes();
+    if (!accountIsCurrent(account)) return;
     const noteById = new Map(cloudNotes.map(n => [n.id, n]));
     const localNotesOnly = [];
-    notesLib.forEach(n => { if (!noteById.has(n.id)) localNotesOnly.push(n); else noteById.set(n.id, n); });
+    notesLib.forEach(n => { if (!noteById.has(n.id)) localNotesOnly.push(n); noteById.set(n.id, n); });
     if (localNotesOnly.length) {
-      try { await Cloud.bulkUpsertNotes(localNotesOnly); } catch (e) { console.warn("note bulk upsert failed", e); }
+      try { await Cloud.bulkUpsertNotes(localNotesOnly); } catch (e) { if (!accountIsCurrent(account)) return; console.warn("note bulk upsert failed", e); }
+      if (!accountIsCurrent(account)) return;
     }
     const mergedNotes = [];
     noteById.forEach(n => mergedNotes.push(n));
@@ -2030,10 +2068,15 @@ async function pullAndMerge() {
     renderNotesLib();
 
     statusEl.textContent = "Synced. " + cloudDecks.length + " deck(s), " + cloudNotes.length + " note(s).";
-  } catch (e) { statusEl.textContent = "Cloud sync failed: " + e.message; }
+  } catch (e) { if (accountIsCurrent(account)) statusEl.textContent = "Cloud sync failed: " + e.message; }
 }
 Cloud.onAuth(u => {
   const wasUserId = user ? user.id : null;
+  const nextUserId = u ? u.id : null;
+  if (nextUserId !== wasUserId) {
+    accountGeneration++;
+    clearPrivateState();
+  }
   user = u;
   cloudReady = Cloud.isConfigured();
   decks = loadDecks();
@@ -2424,6 +2467,7 @@ function deckNameFrom(files, urlTitle) {
 $("generateBtn").onclick = generate;
 async function generate() {
   if (busy) return;
+  const account = captureAccount();
   let text = "", images = [], pages = 1, deckName = "";
 
   if (sourceMode === "pdf") {
@@ -2431,6 +2475,7 @@ async function generate() {
     busy = true; $("generateBtn").disabled = true;
     startProgress(); setProgress(2, "Preparing files…");
     await extractAllPdfs(parseInt($("pFrom").value) || 1, parseInt($("pTo").value) || 0);
+    if (!accountIsCurrent(account)) return;
     const ready = pdfFiles.filter(f => f.status === "ready");
     const failed = pdfFiles.filter(f => f.status === "error");
     if (!ready.length) {
@@ -2462,8 +2507,9 @@ async function generate() {
       try {
         const { text: t, pages: p, images: im } = await extractText(fakeFile, 1, 0, (read, total) => {
           const pct = 10 + (read / Math.max(1, total)) * 35;
-          setProgress(pct, `Reading page ${read} of ${total}…`);
+          if (accountIsCurrent(account)) setProgress(pct, `Reading page ${read} of ${total}…`);
         });
+        if (!accountIsCurrent(account)) return;
         if (t.trim().length < 50 && !im.length) {
           finishProgress("No readable content in that PDF.", true);
           statusEl.textContent = "That PDF had no extractable text.";
@@ -2472,6 +2518,7 @@ async function generate() {
         text = t; pages = p; images = im;
         deckName = (urlData.name || "PDF").replace(/\.[^.]+$/, "");
       } catch (e) {
+        if (!accountIsCurrent(account)) return;
         finishProgress("Couldn't read the PDF.", true);
         statusEl.textContent = "Error: " + e.message;
         busy = false; $("generateBtn").disabled = false; return;
@@ -2495,7 +2542,9 @@ async function generate() {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify(body)
     });
+    if (!accountIsCurrent(account)) return;
     const data = await r.json();
+    if (!accountIsCurrent(account)) return;
     if (!r.ok) throw new Error(data.error || "Request failed.");
     finishProgress("Done!");
     hideProgressLater();
@@ -2526,10 +2575,13 @@ async function generate() {
       statusEl.textContent = "Done — use Save to library to keep this.";
     }
   } catch (e) {
+    if (!accountIsCurrent(account)) return;
     finishProgress("Error", true);
     statusEl.textContent = "Something went wrong: " + e.message;
   } finally {
-    busy = false; $("generateBtn").disabled = false;
+    if (accountIsCurrent(account)) {
+      busy = false; $("generateBtn").disabled = false;
+    }
   }
 }
 
@@ -3112,6 +3164,7 @@ function selectedQuizTypes() {
 }
 
 $("quizStartBtn").onclick = async () => {
+  const account = captureAccount();
   const types = selectedQuizTypes();
   const rawCount = $("quizCount").value === "custom" ? $("quizCustomCount").value : $("quizCount").value;
   const rawTimer = $("quizTimer").value === "custom" ? $("quizCustomTimer").value : $("quizTimer").value;
@@ -3127,27 +3180,33 @@ $("quizStartBtn").onclick = async () => {
   $("quizLoading").classList.remove("hide");
   try {
     const source = quizSource;
-    const questions = await prepareQuizQuestions(types, count, source);
+    const questions = await prepareQuizQuestions(types, count, source, account);
+    if (!accountIsCurrent(account)) return;
     $("quizSetupModal").classList.add("hide");
     message.textContent = "";
     startQuiz(types.length > 1 ? "mixed" : types[0], timer, questions, types, source);
   } catch (error) {
+    if (!accountIsCurrent(account)) return;
     message.textContent = error.message || "Could not prepare this quiz. Please try again.";
   } finally {
+    if (accountIsCurrent(account)) {
     $("quizLoading").classList.add("hide");
     button.disabled = false;
     button.textContent = "Start quiz";
+    }
   }
 };
 
-async function prepareQuizQuestions(types, count, source = quizSource) {
+async function prepareQuizQuestions(types, count, source = quizSource, account = captureAccount()) {
   const pool = (source && source.cards ? source.cards : []).filter(c => c.front && c.back);
   const questions = [];
   const base = Math.floor(count / types.length), remainder = count % types.length;
   for (let i = 0; i < types.length; i++) {
     const type = types[i], typeCount = base + (i < remainder ? 1 : 0);
     $("quizLoadingMsg").textContent = "Creating " + quizTypeLabel(type) + " questions (" + (i + 1) + " of " + types.length + ")…";
+    if (!accountIsCurrent(account)) return [];
     const generated = await generateQuizQuestions(type, typeCount, source);
+    if (!accountIsCurrent(account)) return [];
     questions.push(...generated.map(question => ({ ...question, type })));
   }
   if (!questions.length) throw new Error("No questions were created.");
