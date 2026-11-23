@@ -35,8 +35,10 @@ function fixture() {
     editCards:[{front:'PRIVATE A'}], editReturn:'study',notesMd:'PRIVATE A',
     quizState:{private:true},quizSource:{private:true},quizTimerInterval:1,progAiTimer:2,
     busy:true,pdfFiles:[],urlData:{text:'PRIVATE A'},decks:[],notesLib:[],todayTodos:[],
+    localStorage:{getItem:k=>storage.has(k)?storage.get(k):null,setItem:(k,v)=>storage.set(k,v),
+      removeItem:k=>storage.delete(k),key:i=>[...storage.keys()][i],get length(){return storage.size;}},
     Map, console:{warn(){}}, clearInterval:id=>calls.push(['clearTimer',id]),
-    window:{speechSynthesis:{cancel(){calls.push(['cancelSpeech']);}}},
+    window:{FCSyncJournal:require('../lib/sync-journal'),navigator:{locks:{request:(_name,work)=>work()}},speechSynthesis:{cancel(){calls.push(['cancelSpeech']);}}},
     $,statusEl:{textContent:''},renderAuth(){},renderDecks(){calls.push(['renderDecks']);},
     renderNotesLib(){calls.push(['renderNotes']);},renderFileList(){},
     show:view=>calls.push(['show',view]),
@@ -49,8 +51,8 @@ function fixture() {
     Cloud:{onAuth:fn=>auth=fn,isConfigured:()=>true,
       listMyDecks:async()=>{calls.push(['listDecks']);return [];},
       listMyNotes:async()=>{calls.push(['listNotes']);return [];},
-      bulkUpsert:async rows=>calls.push(['pushDecks',rows]),
-      bulkUpsertNotes:async rows=>calls.push(['pushNotes',rows])}
+      bulkUpsert:async rows=>{calls.push(['pushDecks',rows]);return rows;},
+      bulkUpsertNotes:async rows=>{calls.push(['pushNotes',rows]);return rows;}}
   };
   vm.createContext(state);
   vm.runInContext(section('let accountGeneration =','\n(function migrateIds()'), state);
@@ -122,11 +124,26 @@ test('A logout then A login invalidates the old session even with same user ID',
   assert.equal(f.writes.length,0);
 });
 test('late rejected sync cannot replace next account status',async()=>{
-  const f=fixture(),d=deferred();f.state.Cloud.listMyDecks=()=>d.promise;
-  const old=f.state.pullAndMerge();f.auth(null);
+  const f=fixture(),d=deferred(),started=deferred();
+  f.state.Cloud.listMyDecks=()=>{started.resolve();return d.promise;};
+  const old=f.state.pullAndMerge();
+  await started.promise; // The scheduler has started and is awaiting this request.
+  f.auth(null);
   const msg=f.state.statusEl.textContent;
   d.reject(Error('private A error'));await old;
   assert.equal(f.state.statusEl.textContent,msg);
+});
+test('sign-out before scheduled sync starts prevents the request entirely',async()=>{
+  const f=fixture();let requests=0;
+  f.state.Cloud.listMyDecks=async()=>{requests++;throw Error('must not start');};
+  const old=f.state.pullAndMerge();f.auth(null);await old;
+  assert.equal(requests,0);assert.equal(f.writes.length,0);
+});
+test('current-account request failure is caught and reported without claiming success',async()=>{
+  const f=fixture();f.state.Cloud.listMyDecks=async()=>{throw Error('offline');};
+  await f.state.pullAndMerge();
+  assert.match(f.state.statusEl.textContent,/Cloud synchronization failed: offline/);
+  assert.equal(f.writes.length,0);
 });
 test('same-account token refresh keeps active study and in-flight sync valid',async()=>{
   const f=fixture(),d=deferred();f.state.Cloud.listMyDecks=()=>d.promise;
@@ -200,5 +217,7 @@ test('failed local uploads retain account libraries',async()=>{
   assert.equal(JSON.parse(f.storage.get('fc_decks::A'))[0].id,'local-A');
   assert.equal(JSON.parse(f.storage.get('fc_notes::A'))[0].id,'local-note-A');
 });
+
+
 
 
