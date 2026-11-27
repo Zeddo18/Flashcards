@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { Script } = require('node:vm');
 
 const JS_TYPES = new Set([
   'application/ecmascript', 'application/javascript', 'application/x-ecmascript',
@@ -72,6 +73,12 @@ function inlineScripts(html) {
 }
 
 function check(code, mode, label) {
+  if (mode === 'commonjs') {
+    // Browser classic scripts have no Node function wrapper (e.g. return is invalid).
+    try { new Script(code, { filename: label }); }
+    catch (error) { throw new Error(label + '\n' + error.stack); }
+    return;
+  }
   const result = spawnSync(process.execPath, ['--check', '--input-type=' + mode], {
     input: code, encoding: 'utf8', timeout: 30000
   });
