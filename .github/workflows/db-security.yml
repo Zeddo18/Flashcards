@@ -1,0 +1,48 @@
+name: Database security (synthetic)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-rls:
+    name: PostgreSQL RLS regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-test-only
+          POSTGRES_DB: fc007a_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d fc007a_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: synthetic-test-only
+      PGDATABASE: fc007a_test
+    steps:
+      - name: Check out source (no credentials)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client if needed
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
+      - name: Set up disposable schema and synthetic accounts
+        run: psql -X -v ON_ERROR_STOP=1 -f test/db/fixture.sql
+      - name: Apply proposal to disposable PostgreSQL only
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/proposals/fc007a_least_privilege.sql
+      - name: Check RLS policies, permissions, triggers and account isolation
+        run: psql -X -v ON_ERROR_STOP=1 -f test/db/security-regression.sql

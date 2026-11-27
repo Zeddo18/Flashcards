@@ -1,0 +1,51 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
+const proposal = read('supabase/proposals/fc007a_least_privilege.sql');
+const fixture = read('test/db/fixture.sql');
+const regressions = read('test/db/security-regression.sql');
+const workflow = read('.github/workflows/db-security.yml');
+
+test('hardening SQL is explicitly marked review-only and narrowly scoped', () => {
+  assert.match(proposal, /REVIEW ONLY/);
+  assert.match(proposal, /REVOKE TRUNCATE, REFERENCES, TRIGGER, MAINTAIN[\s\S]*public\.decks, public\.notes FROM anon, authenticated/i);
+  assert.match(proposal, /REVOKE EXECUTE ON FUNCTION public\.touch_updated_at\(\)/i);
+  assert.match(proposal, /ALTER FUNCTION public\.touch_updated_at\(\) SET search_path TO pg_catalog/i);
+  const statements = proposal.split('\n').filter(line => !line.trim().startsWith('--')).join('\n');
+  assert.doesNotMatch(statements, /\b(?:DROP|DELETE|UPDATE|INSERT|CREATE|ALTER\s+TABLE|ALTER\s+POLICY|GRANT|REVOKE\s+ALL)\b/i);
+  assert.doesNotMatch(proposal, /\bpublic\.profiles\b|\bhandle_new_user\s*\(/i);
+});
+
+test('disposable database harness does not reference production credentials or host', () => {
+  for (const text of [proposal, fixture, regressions, workflow]) {
+    assert.doesNotMatch(text, /csdnqwricljioxrcwmwj|supabase\.co|service_role\b|eyJhbGci|password=.*(?:real|prod)/i);
+  }
+  assert.match(workflow, /postgres:17/);
+  assert.match(workflow, /permissions:\s*\n\s*contents: read/);
+  assert.match(workflow, /-f test\/db\/fixture\.sql/);
+  assert.match(workflow, /-f supabase\/proposals\/fc007a_least_privilege\.sql/);
+  assert.match(workflow, /-f test\/db\/security-regression\.sql/);
+});
+
+test('real policy fixture contains ownership checks and deliberately synthetic users', () => {
+  assert.match(fixture, /CREATE POLICY "update own"[\s\S]*WITH CHECK \(user_id = auth\.uid\(\)\)/);
+  assert.match(fixture, /CREATE POLICY "update own notes"[\s\S]*WITH CHECK \(user_id = auth\.uid\(\)\)/);
+  assert.match(fixture, /ENABLE ROW LEVEL SECURITY/g);
+  assert.match(fixture, /aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/);
+  assert.match(fixture, /bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/);
+});
+
+test('regression suite checks both user directions, public visibility and timestamp triggers', () => {
+  assert.match(regressions, /SET ROLE anon/);
+  assert.match(regressions, /SET ROLE authenticated/g);
+  assert.match(regressions, /A updated B private deck/);
+  assert.match(regressions, /A deleted B private note/);
+  assert.match(regressions, /B must see B private and public/);
+  assert.match(regressions, /Timestamp triggers|timestamp triggers/i);
+  assert.match(regressions, /CREATE TRIGGER deck_touch_test/);
+});
