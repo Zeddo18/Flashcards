@@ -1232,7 +1232,14 @@ button,select,input,textarea,label{touch-action:manipulation}
       <button id="exportAll">Export all</button>
       <button id="importAll">Import</button>
       <button id="syncNow" class="hide">Sync now</button>
+      <button id="reviewConflicts">Review conflicts</button>
+      <button id="uploadRecovery" class="hide">Upload recovered copies</button>
     </div>
+    <section id="recoveryPanel" class="panel hide" aria-label="Conflict recovery">
+      <div class="row"><h2>Review conflicts</h2><button id="closeRecovery">Close</button></div>
+      <p>Compare every preserved copy. Replacing content requires confirmation. Export All includes recovery copies.</p>
+      <div id="recoveryList"></div>
+    </section>
     <div id="todayBox"></div>
     <div class="searchwrap"><input id="deckSearch" type="text" placeholder="Search decks and cards…" autocomplete="off"></div>
     <div id="deckList" class="decklist"></div>
@@ -1605,7 +1612,9 @@ function clearPrivateState() {
   ["front", "back", "deckTitle", "cnt", "dueInfo", "editTitle", "editHint",
    "editList", "qbox", "out", "out2", "noteTitle", "genNoteTitle",
    "summary", "quizProg", "quizTimerDisplay", "quizScoreLive",
-   "quizSetupMsg", "quizLoadingMsg"].forEach(id => { $(id).textContent = ""; });
+   "quizSetupMsg", "quizLoadingMsg", "recoveryList"].forEach(id => { $(id).textContent = ""; });
+  $("recoveryPanel").classList.add("hide");
+  $("uploadRecovery").classList.add("hide");
   $("noteView").removeAttribute("data-id");
   $("card").classList.remove("flip");
   $("quizProgFill").style.width = "0%";
@@ -2052,7 +2061,7 @@ async function pullAndMerge() {
       });
     if (!result || !accountIsCurrent(account)) return;
     if (result.failed) setCloudSyncStatus("Cloud synchronization failed. Changes remain queued locally; use Sync now to retry.");
-    else if (result.conflicts) setCloudSyncStatus("Saved locally; " + result.conflicts + " conflict(s) preserved in this account's sync journal. Cloud copies were not overwritten.");
+    else if (result.conflicts) setCloudSyncStatus("Saved locally; " + result.conflicts + " conflict(s) preserved. Open Review conflicts to compare copies. Cloud copies were not overwritten.");
     else if (result.pending) setCloudSyncStatus("Saved locally; " + result.pending + " change(s) awaiting upload.");
     else setCloudSyncStatus("Successfully synchronized.");
   } catch (e) {
@@ -2088,6 +2097,7 @@ Cloud.onAuth(u => {
   renderAuth();
   $("acctSyncState").textContent = user ? "Cloud sync not verified" : "Guest mode — saved on this device";
   $("syncNow").classList.toggle("hide", !user);
+  $("uploadRecovery").classList.toggle("hide", !user);
   renderDecks();
   renderNotesLib();
   if (user && user.id !== wasUserId) {
@@ -3007,29 +3017,108 @@ $("printPdf").onclick = () => {
     '</body></html>');
   w.document.close(); setTimeout(() => w.print(), 350);
 };
-$("exportAll").onclick = () => download("flushcard-backup-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify({ decks, notes: notesLib }, null, 2), "application/json");
+$("exportAll").onclick = () => {
+  try {
+    const backup = getSyncJournal().backup(captureAccount(), {decks,notes:notesLib});
+    download("flushcard-backup-" + new Date().toISOString().slice(0,10) + ".json", JSON.stringify(backup,null,2), "application/json");
+  } catch(e) { statusEl.textContent = "Export failed: " + e.message; }
+};
 $("importAll").onclick = () => {
+  const account = captureAccount();
   const i = document.createElement("input");
   i.type = "file"; i.accept = ".json,application/json";
   i.onchange = async () => {
     try {
-      const obj = JSON.parse(await i.files[0].text());
-      const addDecks = Array.isArray(obj) ? obj : (obj.decks || []);
-      const addNotes = Array.isArray(obj) ? [] : (obj.notes || []);
-      addDecks.forEach(d => {
-        d.id = Cloud.uuid(); d.created = d.created || Date.now();
-        d.cards = (d.cards || []).map(c => ({ front: String(c.front || ""), back: String(c.back || ""), srs: c.srs }));
-        decks.unshift(d); pushDeck(d);
-      });
-      addNotes.forEach(n => { n.id = Cloud.uuid(); notesLib.unshift(n); });
-      saveDecks(); saveNotes(); renderDecks(); renderNotesLib();
-      $("nDecks").textContent = decks.length;
-      $("nNotes").textContent = notesLib.length;
-      statusEl.textContent = "Imported " + addDecks.length + " deck(s)" + (addNotes.length ? " and " + addNotes.length + " note(s)" : "") + ".";
-    } catch { statusEl.textContent = "That file didn't look like a backup."; }
+      const file=i.files[0];if(!file)return;
+      if(file.size>12000000)throw Error("Backup exceeds 12 MB.");
+      const text=await file.text();
+      if(!accountIsCurrent(account))throw Error("Account changed. Import again.");
+      const restored=window.FCSyncJournal.recoverBackup(JSON.parse(text),account,Cloud.uuid);
+      const existing=new Set([...decks,...notesLib].map(x=>x.id));
+      if([...restored.decks,...restored.notes].some(x=>existing.has(x.id)))throw Error("Recovery ID collision. Import again.");
+      // Holds are durable before adding records, and never replay old deletes or operation IDs.
+      for(const entity of ["decks","notes"])for(const value of restored[entity])
+        getSyncJournal().holdRecovery(account,entity,value);
+      decks=[...restored.decks,...decks];notesLib=[...restored.notes,...notesLib];
+      if(saveDecks()===false || saveNotes()===false)throw Error("Local storage failed. Keep the backup file; recovery may be incomplete.");
+      renderDecks();renderNotesLib();
+      $("nDecks").textContent=decks.length;$("nNotes").textContent=notesLib.length;
+      $("uploadRecovery").classList.toggle("hide",!user || !restored.decks.length && !restored.notes.length);
+      statusEl.textContent="Restored "+restored.decks.length+" deck(s), "+restored.notes.length+" note(s), including "+restored.recoveryCopies+" recovery copies. Saved locally; nothing uploaded.";
+    }catch(e){statusEl.textContent="Recovery failed: "+e.message;}
   };
   i.click();
 };
+$("uploadRecovery").onclick = async () => {
+  try {
+    getSyncJournal().uploadRecovered(captureAccount());
+    await pullAndMerge();
+  }catch(e){statusEl.textContent="Recovery upload failed: "+e.message;}
+};
+$("closeRecovery").onclick = () => {
+  $("recoveryPanel").classList.add("hide");$("recoveryList").textContent="";
+};
+$("reviewConflicts").onclick = renderConflicts;
+function renderConflicts() {
+  const list=$("recoveryList");list.textContent="";
+  $("recoveryPanel").classList.remove("hide");
+  if(!user){list.textContent="Sign in to review this account's conflicts.";return;}
+  const account=captureAccount();
+  try {
+    const conflicts=getSyncJournal().conflicts(account);
+    if(!conflicts.length){list.textContent="No unresolved conflicts. Export All still includes previously preserved versions.";return;}
+    for(const conflict of conflicts){
+      const section=document.createElement("section");section.className="panel";
+      const title=document.createElement("h3");
+      title.textContent=(conflict.entity==="decks"?"Deck: ":"Note: ")+(conflict.local.name||conflict.local.title);
+      section.appendChild(title);
+      const versions=[["Current local version",conflict.local],["Last reviewed cloud version",conflict.remote],
+        ...conflict.versions.map((v,i)=>["Preserved copy "+(i+1),v])];
+      for(const [label,value] of versions){
+        const details=document.createElement("details"),summary=document.createElement("summary"),pre=document.createElement("pre");
+        summary.textContent=label;pre.textContent=JSON.stringify(value,null,2);
+        pre.style.whiteSpace="pre-wrap";pre.style.overflowWrap="anywhere";
+        details.append(summary,pre);section.appendChild(details);
+      }
+      const confirmBox=document.createElement("div");confirmBox.className="hide";
+      const warning=document.createElement("p"),confirm=document.createElement("button"),cancel=document.createElement("button");
+      confirm.textContent="Confirm replacement";cancel.textContent="Cancel";
+      confirmBox.append(warning,confirm,cancel);cancel.onclick=()=>confirmBox.classList.add("hide");
+      for(const choice of ["local","remote"]){
+        const button=document.createElement("button");
+        button.textContent=choice==="local"?"Keep local version":"Keep cloud version";
+        button.onclick=()=>{
+          warning.textContent=choice==="local"
+            ?"This replaces the cloud content only if its reviewed revision is unchanged. All copies remain in Export All."
+            :"This replaces the visible local content with the freshly checked cloud version. All copies remain in Export All.";
+          confirmBox.classList.remove("hide");
+          confirm.onclick=async()=>{
+            confirm.disabled=true;
+            try{
+              await getSyncJournal().resolve(account,conflict,choice,(entity,id,value)=>{
+                if(!accountIsCurrent(account))throw Error("Account changed.");
+                if(entity==="decks"){
+                  decks=decks.filter(d=>d.id!==id).concat(value);
+                  if(saveDecks()===false)throw Error("Local storage failed.");
+                  if(cur && cur.id===id){cur=null;cards=[];session=null;$("front").textContent="";$("back").textContent="";}
+                  renderDecks();
+                }else{
+                  notesLib=notesLib.filter(n=>n.id!==id).concat(value);
+                  if(saveNotes()===false)throw Error("Local storage failed.");
+                  $("out").textContent="";$("noteView").removeAttribute("data-id");renderNotesLib();
+                }
+              });
+              if(accountIsCurrent(account)){statusEl.textContent="Conflict resolved; preserved versions remain in Export All.";renderConflicts();}
+            }catch(e){if(accountIsCurrent(account))statusEl.textContent="Resolution stopped: "+e.message;}
+            finally{confirm.disabled=false;}
+          };
+        };
+        section.appendChild(button);
+      }
+      section.appendChild(confirmBox);list.appendChild(section);
+    }
+  }catch(e){list.textContent="Could not read conflicts: "+e.message;}
+}
 
 /* ========== base64 share ========== */
 const enc = s => btoa(unescape(encodeURIComponent(s)));
@@ -3923,5 +4012,7 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
+
+
 
 
