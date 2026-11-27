@@ -9,6 +9,7 @@ test('inline checker checks classic JavaScript and reports invalid syntax', () =
   check(script.code, script.mode, 'valid classic');
   assert.throws(() => check('const = ;', 'commonjs', 'broken classic'), /broken classic[\s\S]*SyntaxError/);
   assert.throws(() => check('export const value = 1;', 'commonjs', 'classic export'), /SyntaxError/);
+  assert.throws(() => check('return 1;', 'commonjs', 'classic return'), /SyntaxError/);
 });
 
 test('module scripts support imports, exports and top-level await without execution', () => {
