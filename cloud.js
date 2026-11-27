@@ -57,6 +57,7 @@
   /* ---------- decks ---------- */
   function rowToDeck(row) {
     return {
+      _revision: row.updated_at,
       id: row.id,
       name: row.name,
       color: row.color,
@@ -150,6 +151,7 @@
   /* ---------- notes ---------- */
   function rowToNote(row) {
     return {
+      _revision: row.updated_at,
       id: row.id,
       title: row.title,
       md: row.md,
@@ -197,6 +199,16 @@
     return (data || []).map(rowToNote);
   }
 
+  async function resolveVersion(entity, value, revision, expectedUserId) {
+    if (!user || user.id !== expectedUserId) throw new Error("Account changed.");
+    if (!["decks", "notes"].includes(entity) || typeof revision !== "string") throw new Error("Invalid conflict resolution.");
+    const row = entity === "decks" ? deckToRow(value) : noteToRow(value);
+    const { data, error } = await client.from(entity).update(row)
+      .eq("id", value.id).eq("user_id", expectedUserId).eq("updated_at", revision)
+      .select().maybeSingle();
+    if (error) throw error;
+    return data ? (entity === "decks" ? rowToDeck(data) : rowToNote(data)) : null;
+  }
   function makeSlug() {
     const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
     let s = "";
@@ -218,6 +230,8 @@
     listMyDecks, upsertDeck, deleteDeck, bulkUpsert,
     publishDeck, unpublishDeck, getPublicDeck,
     listMyNotes, upsertNote, deleteNote, bulkUpsertNotes,
-    uuid
+    uuid, resolveVersion
   };
 })();
+
+
