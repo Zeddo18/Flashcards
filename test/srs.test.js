@@ -181,6 +181,6 @@ test('frontend and offline shell load the tested SRS module', () => {
   assert.match(html, /window\.FCSRS\.selectSessionCards/);
   assert.match(html, /if \(!flipped\)/);
   assert.match(html, /s\.completed \+ ' \/ ' \+ s\.total/);
-  assert.match(sw, /"flushcard-v12"/);
+  assert.match(sw, /"flushcard-v13"/);
   assert.match(sw, /"\/lib\/srs\.js"/);
 });

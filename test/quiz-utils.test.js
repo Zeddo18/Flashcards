@@ -118,6 +118,6 @@ test('quiz helper is loaded by the app and included in the offline shell', () =>
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   assert.match(html, /<script src="\/lib\/quiz-utils\.js"><\/script>/);
-  assert.match(sw, /"flushcard-v12"/);
+  assert.match(sw, /"flushcard-v13"/);
   assert.match(sw, /"\/lib\/quiz-utils\.js"/);
 });
