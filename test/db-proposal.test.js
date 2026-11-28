@@ -10,6 +10,8 @@ const proposal = read('supabase/proposals/fc007a_least_privilege.sql');
 const fixture = read('test/db/fixture.sql');
 const regressions = read('test/db/security-regression.sql');
 const workflow = read('.github/workflows/db-security.yml');
+const studyMigration = read('supabase/migrations/202611280001_fc008e_study_history_devices.sql');
+const studyTests = read('test/db/study-history-sync.sql');
 
 test('hardening SQL is explicitly marked review-only and narrowly scoped', () => {
   assert.match(proposal, /REVIEW ONLY/);
@@ -22,7 +24,7 @@ test('hardening SQL is explicitly marked review-only and narrowly scoped', () =>
 });
 
 test('disposable database harness does not reference production credentials or host', () => {
-  for (const text of [proposal, fixture, regressions, workflow]) {
+  for (const text of [proposal, fixture, regressions, workflow, studyMigration, studyTests]) {
     assert.doesNotMatch(text, /csdnqwricljioxrcwmwj|supabase\.co|service_role\b|eyJhbGci|password=.*(?:real|prod)/i);
   }
   assert.match(workflow, /postgres:17/);
@@ -30,6 +32,8 @@ test('disposable database harness does not reference production credentials or h
   assert.match(workflow, /-f test\/db\/fixture\.sql/);
   assert.match(workflow, /-f supabase\/proposals\/fc007a_least_privilege\.sql/);
   assert.match(workflow, /-f test\/db\/security-regression\.sql/);
+  assert.match(workflow, /-f supabase\/migrations\/202611280001_fc008e_study_history_devices\.sql/);
+  assert.match(workflow, /-f test\/db\/study-history-sync\.sql/);
 });
 
 test('real policy fixture contains ownership checks and deliberately synthetic users', () => {
@@ -48,4 +52,24 @@ test('regression suite checks both user directions, public visibility and timest
   assert.match(regressions, /B must see B private and public/);
   assert.match(regressions, /Timestamp triggers|timestamp triggers/i);
   assert.match(regressions, /CREATE TRIGGER deck_touch_test/);
+});
+
+test('FC-008E migration is isolated to per-device study history with owner RLS', () => {
+  assert.match(studyMigration, /CREATE TABLE public\.study_history_devices/);
+  assert.match(studyMigration, /PRIMARY KEY \(user_id, device_id\)/);
+  assert.match(studyMigration, /REFERENCES auth\.users\(id\) ON DELETE CASCADE/);
+  assert.match(studyMigration, /ENABLE ROW LEVEL SECURITY/);
+  assert.match(studyMigration, /REVOKE ALL PRIVILEGES[\s\S]*FROM PUBLIC, anon, authenticated/);
+  assert.match(studyMigration, /GRANT SELECT, INSERT, UPDATE, DELETE[\s\S]*TO authenticated/);
+  assert.equal((studyMigration.match(/USING \(user_id = auth\.uid\(\)\)/g) || []).length, 2);
+  assert.equal((studyMigration.match(/WITH CHECK \(user_id = auth\.uid\(\)\)/g) || []).length, 2);
+  assert.doesNotMatch(studyMigration, /public\.decks|public\.notes|public\.profiles|DROP TABLE|TRUNCATE TABLE/i);
+});
+
+test('FC-008E SQL regression checks anon denial and two-account device isolation', () => {
+  assert.match(studyTests, /SET ROLE anon/);
+  assert.match(studyTests, /SET ROLE authenticated/g);
+  assert.match(studyTests, /A forged B ownership/);
+  assert.match(studyTests, /A updated B device history/);
+  assert.match(studyTests, /B history was changed by A/);
 });
