@@ -2767,10 +2767,9 @@ function rate(rating) {
     saveDecks(); pushDeck(cur);
   }
   window.FCSRS.recordRating(session, rating);
-  cards.splice(idx, 1);
-  if (rating === 0) cards.push(c);
-  if (!cards.length) return endSession();
-  if (idx >= cards.length) idx = 0;
+  const advance = window.FCSRS.removeRatedCard(cards, idx, rating);
+  idx = advance.index;
+  if (!advance.remaining) return endSession();
   showCard();
 }
 $("rateAgain").onclick = () => rate(0);

@@ -132,6 +132,39 @@ test('session metrics distinguish completed cards from retry attempts', () => {
   assert.equal(session.total, 2);
 });
 
+test('Again moves a card to the back and advances rather than immediately repeating the last card', () => {
+  const a = { id: 'a' }, b = { id: 'b' }, c = { id: 'c' };
+  const cards = [a, b, c];
+  const result = SRS.removeRatedCard(cards, 2, 0);
+  assert.deepEqual(cards, [a, b, c]);
+  assert.equal(result.card, c);
+  assert.equal(result.index, 0);
+  assert.equal(cards[result.index], a);
+});
+
+test('Again on the first card advances to the next card and a single-card retry remains available', () => {
+  const a = { id: 'a' }, b = { id: 'b' };
+  const cards = [a, b];
+  const result = SRS.removeRatedCard(cards, 0, 0);
+  assert.deepEqual(cards, [b, a]);
+  assert.equal(result.index, 0);
+  assert.equal(cards[result.index], b);
+
+  const only = [a];
+  const single = SRS.removeRatedCard(only, 0, 0);
+  assert.deepEqual(only, [a]);
+  assert.equal(single.index, 0);
+});
+
+test('non-Again ratings remove the card and wrap to the next available index', () => {
+  const a = { id: 'a' }, b = { id: 'b' };
+  const cards = [a, b];
+  const result = SRS.removeRatedCard(cards, 1, 2);
+  assert.deepEqual(cards, [a]);
+  assert.equal(result.index, 0);
+  assert.equal(result.remaining, 1);
+});
+
 test('virtual all-decks sessions can track ratings without writing SRS state', () => {
   const session = SRS.createSession(1, NOW);
   SRS.recordRating(session, 0);
