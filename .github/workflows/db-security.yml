@@ -42,7 +42,11 @@ jobs:
         run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
       - name: Set up disposable schema and synthetic accounts
         run: psql -X -v ON_ERROR_STOP=1 -f test/db/fixture.sql
-      - name: Apply proposal to disposable PostgreSQL only
+      - name: Apply FC-007A proposal to disposable PostgreSQL only
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/proposals/fc007a_least_privilege.sql
-      - name: Check RLS policies, permissions, triggers and account isolation
+      - name: Apply FC-008E study-history migration to disposable PostgreSQL only
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/202611280001_fc008e_study_history_devices.sql
+      - name: Check existing RLS policies, permissions, triggers and account isolation
         run: psql -X -v ON_ERROR_STOP=1 -f test/db/security-regression.sql
+      - name: Check study-history device isolation and permissions
+        run: psql -X -v ON_ERROR_STOP=1 -f test/db/study-history-sync.sql
