@@ -1,6 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   normalizeQuizResponse,
   gradeEnumeration
@@ -109,4 +111,13 @@ test('malformed questions are skipped and response count is capped', () => {
     { prompt: 'Q3', answer: 'A3' }
   ] }, 2);
   assert.equal(result.questions.length, 2);
+});
+
+test('quiz helper is loaded by the app and included in the offline shell', () => {
+  const root = path.resolve(__dirname, '..');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  assert.match(html, /<script src="\/lib\/quiz-utils\.js"><\/script>/);
+  assert.match(sw, /"flushcard-v10"/);
+  assert.match(sw, /"\/lib\/quiz-utils\.js"/);
 });
