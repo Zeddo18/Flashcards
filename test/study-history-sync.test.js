@@ -121,7 +121,9 @@ test('missing Web Locks allows local recording but blocks unsafe cloud synchroni
 });
 test('invalid remote history fails closed and is never overwritten',async()=>{
   const f=fixture(),account=f.account(),id='22222222-2222-4222-8222-222222222222';
-  f.rows.set(account.userId+'::'+id,{user_id:account.userId,device_id:id,history:{version:1,sources:[{sourceId:id,history:{version:1,totals:{reviews:-1}}}]}});
+  const invalid=Analytics.createHistory();invalid.totals.reviews=-1;
+  f.rows.set(account.userId+'::'+id,{user_id:account.userId,device_id:id,
+    history:{version:1,sources:[{sourceId:id,history:invalid}]}});
   await assert.rejects(f.sync.sync(account),/invalid lifetime total/i);
   assert.equal(f.rows.get(account.userId+'::'+id).history.sources[0].history.totals.reviews,-1);
 });

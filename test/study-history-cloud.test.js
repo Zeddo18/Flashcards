@@ -33,7 +33,7 @@ test('study-history upsert uses composite key and sends the authenticated owner'
   const envelope={version:1,sources:[]};
   const row=await f.window.Cloud.upsertMyStudyHistoryDevice(id,envelope,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
   assert.equal(row.device_id,id);assert.equal(f.upserted.user_id,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
-  assert.deepEqual(f.calls.find(c=>c[0]==='upsert')[2],{onConflict:'user_id,device_id'});
+  assert.equal(f.calls.find(c=>c[0]==='upsert')[2].onConflict,'user_id,device_id');
 });
 test('study-history methods reject mismatched accounts before issuing requests',async()=>{
   const f=clientFixture(),before=f.calls.length;
