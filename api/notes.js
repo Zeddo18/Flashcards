@@ -6,6 +6,7 @@
 // Falls back between models on transient errors, aborts before the platform timeout.
 
 const { originMatches, validatePayload, takeQuota, applySecurityHeaders } = require("../lib/notes-security");
+const { normalizeQuizResponse } = require("../lib/quiz-utils");
 
 const MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
 const HARD_LIMIT_MS = 45000;
@@ -247,45 +248,15 @@ module.exports = async (req, res) => {
   }
 
   if (isQuiz) {
-    let parsed = extractQuizObject(result.text);
-    if (Array.isArray(parsed)) parsed = type === "match" ? { pairs: parsed } : { questions: parsed };
-    if (!parsed || typeof parsed !== "object") {
-      return res.status(502).json({ error: "The AI returned an invalid quiz format. Please try again." });
+    const parsed = extractQuizObject(result.text);
+    const normalized = normalizeQuizResponse(type, parsed, n);
+    if (!normalized) {
+      const message = type === "match"
+        ? "The AI could not create enough distinct matching pairs. Try another quiz type."
+        : "The AI could not create valid quiz questions. Please try again.";
+      return res.status(502).json({ error: message });
     }
-    const clean = value => typeof value === "string" ? value.trim().slice(0, 1000) : "";
-    const cleanTip = value => clean(value).slice(0, 360);
-    if (type === "match") {
-      const pairs = Array.isArray(parsed.pairs) ? parsed.pairs.map(p => ({ term: clean(p && p.term), definition: clean(p && p.definition), tip: cleanTip(p && (p.tip || p.hint)) })).filter(p => p.term && p.definition).slice(0, n) : [];
-      if (pairs.length < 2) return res.status(502).json({ error: "The AI could not create enough matching pairs. Try another quiz type." });
-      return res.status(200).json({ pairs });
-    }
-    const questions = Array.isArray(parsed.questions) ? parsed.questions.map(q => {
-      if (!q || typeof q !== "object") return null;
-      const prompt = clean(q.prompt || q.question || q.clue);
-      const rawItems = Array.isArray(q.items) ? q.items.map(clean).filter(Boolean).slice(0, 12) : [];
-      const answer = clean(q.answer || q.correctAnswer || q.correct) || (type === "enum" ? rawItems.join(", ") : "");
-      if (!prompt || !answer) return null;
-      let correct = answer;
-      if (type === "tf") {
-        if (/^true$/i.test(answer)) correct = "True";
-        else if (/^false$/i.test(answer)) correct = "False";
-        else return null;
-      }
-      const item = { prompt, correct, explanation: clean(q.explanation || q.reason), tip: cleanTip(q.tip || q.hint) };
-      if (type === "mc") {
-        let options = Array.isArray(q.options) ? q.options.map(clean).filter(Boolean).slice(0, 4) : [];
-        if (!options.some(o => o.toLowerCase() === answer.toLowerCase())) options[0] = answer;
-        item.options = [...new Set(options)].slice(0, 4);
-      }
-      if (type === "enum") {
-        const items = rawItems;
-        if (items.length < 2) return null;
-        item.items = items; item.correct = items.join(", ");
-      } else if (Array.isArray(q.acceptedAnswers)) item.acceptedAnswers = q.acceptedAnswers.map(clean).filter(Boolean).slice(0, 8);
-      return item;
-    }).filter(Boolean).slice(0, n) : [];
-    if (!questions.length) return res.status(502).json({ error: "The AI could not create quiz questions from these cards." });
-    return res.status(200).json({ questions });
+    return res.status(200).json(normalized);
   }
 
   if (!isCards) return res.status(200).json({ notes: result.text });
