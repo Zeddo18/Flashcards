@@ -61,7 +61,7 @@ test('FC-008E migration is isolated to per-device study history with owner RLS',
   assert.match(studyMigration, /ENABLE ROW LEVEL SECURITY/);
   assert.match(studyMigration, /REVOKE ALL PRIVILEGES[\s\S]*FROM PUBLIC, anon, authenticated/);
   assert.match(studyMigration, /GRANT SELECT, INSERT, UPDATE, DELETE[\s\S]*TO authenticated/);
-  assert.equal((studyMigration.match(/USING \(user_id = auth\.uid\(\)\)/g) || []).length, 2);
+  assert.equal((studyMigration.match(/USING \(user_id = auth\.uid\(\)\)/g) || []).length, 3);
   assert.equal((studyMigration.match(/WITH CHECK \(user_id = auth\.uid\(\)\)/g) || []).length, 2);
   assert.doesNotMatch(studyMigration, /public\.decks|public\.notes|public\.profiles|DROP TABLE|TRUNCATE TABLE/i);
 });

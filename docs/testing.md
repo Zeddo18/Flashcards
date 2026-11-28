@@ -2,10 +2,10 @@
 
 Run from the repository root with Node.js 24 LTS (no install step):
 
-\`\`\`
+```
 node scripts/check-syntax.js
 node --test test/*.test.js
-\`\`\`
+```
 
 The syntax command checks root JavaScript and all JavaScript under api, lib,
 scripts, and test. It also checks executable inline scripts in index.html,
