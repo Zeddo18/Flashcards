@@ -71,6 +71,12 @@ test('enumeration grading accepts exact answers in any order', () => {
   assert.deepEqual(result.extra, []);
 });
 
+test('enumeration grading ignores trailing punctuation while keeping exact item matching', () => {
+  const result = gradeEnumeration(['Solar energy', 'Water'], 'solar energy., WATER!');
+  assert.equal(result.correct, true);
+  assert.equal(result.matched, 2);
+});
+
 test('enumeration grading rejects partial substring answers', () => {
   const result = gradeEnumeration(['Solar energy'], 'solar');
   assert.equal(result.correct, false);
