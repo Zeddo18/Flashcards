@@ -1692,7 +1692,6 @@ function renderStudyAnalytics() {
   if (!box) return;
   const summary = window.FCStudyAnalytics.getSummary(studyHistory);
   const recall = summary.recallRate === null ? "—" : summary.recallRate + "%";
-  const completion = summary.completionRate === null ? "—" : summary.completionRate + "%";
   const maxDaily = Math.max(1, ...summary.weekly.map(day => day.reviews));
   const weekly = summary.weekly.map(day => {
     const height = day.reviews ? Math.max(6, Math.round(day.reviews / maxDaily * 72)) : 4;
@@ -1705,7 +1704,7 @@ function renderStudyAnalytics() {
     return '<div class="analytics-deck-row">' +
       '<div class="analytics-deck-name">' + escHtml(deck.deckName) +
       '<small class="analytics-deck-meta">' + deck.sessions + ' completed sessions · ' +
-      deck.completedCards + '/' + deck.sessionCards + ' cards completed</small></div>' +
+      deck.completedCards + ' session cards completed</small></div>' +
       '<div class="analytics-deck-value">' + deck.reviews + '<small>reviews</small></div>' +
       '<div class="analytics-deck-value">' + rate + '<small>recall</small></div></div>';
   }).join("") : '<div class="analytics-empty">No study activity recorded yet. Rate a few flashcards to start your learning history.</div>';
@@ -1721,13 +1720,12 @@ function renderStudyAnalytics() {
     '<div class="analytics-stat"><strong>' + summary.currentStreak + '</strong><span>Current streak · days</span></div>' +
     '</div>' +
     '<div class="analytics-substats"><span>Completed sessions: <strong>' + summary.sessions + '</strong></span>' +
-    '<span>Cards completed: <strong>' + summary.completedCards + '/' + summary.sessionCards + '</strong></span>' +
-    '<span>Session completion: <strong>' + completion + '</strong></span>' +
-    '<span>Longest streak: <strong>' + summary.longestStreak + ' days</strong></span></div>' +
+    '<span>Cards completed in completed sessions: <strong>' + summary.completedCards + '</strong></span>' +
+    '<span>Longest streak (2-year history): <strong>' + summary.longestStreak + ' days</strong></span></div>' +
     '<div class="analytics-section-title">Last 7 days · reviews</div>' +
     '<div class="analytics-week" role="group" aria-label="Daily review counts for the last seven days">' + weekly + '</div>' +
     '<div class="analytics-section-title">Deck history</div><div class="analytics-decks">' + deckRows + '</div>' +
-    '<p class="analytics-note">Recall success counts Hard, Good and Easy ratings. It is based on self-ratings, not quiz accuracy. History starts with this update and is stored locally for each account on this device.</p>';
+    '<p class="analytics-note">Detailed daily history is retained for 2 years; lifetime totals and deck summaries are preserved. Recall success counts Hard, Good and Easy ratings. It is based on self-ratings, not quiz accuracy. History starts with this update and is stored locally for each account on this device.</p>';
 }
 
 /* ========== accent picker ========== */
