@@ -31,6 +31,7 @@ Existing regression coverage:
 | Durable retries, tombstones, serialization and public sharing contracts | `test/sync-journal.test.js` |
 | Manual conflicts, stale resolutions, backup and recovery | `test/recovery.test.js` |
 | Recovery UI, account switches, guests and export | `test/recovery-ui.test.js` |
+| Study history, daily activity, streaks and per-deck analytics | `test/study-analytics.test.js` |
 | Executable inline script classification and syntax-check behavior | `test/syntax-check.test.js` |
 
 Tests use synthetic data and mocked cloud/network responses. They do not verify
