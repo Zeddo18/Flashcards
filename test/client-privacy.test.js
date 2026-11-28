@@ -34,7 +34,7 @@ function fixture() {
     idx:1,flipped:true,session:{private:true},editTarget:{id:'A-deck'},
     editCards:[{front:'PRIVATE A'}], editReturn:'study',notesMd:'PRIVATE A',
     quizState:{private:true},quizSource:{private:true},quizTimerInterval:1,progAiTimer:2,
-    busy:true,pdfFiles:[],urlData:{text:'PRIVATE A'},decks:[],notesLib:[],todayTodos:[],
+    busy:true,pdfFiles:[],urlData:{text:'PRIVATE A'},decks:[],notesLib:[],todayTodos:[],studyHistory:{},
     localStorage:{getItem:k=>storage.has(k)?storage.get(k):null,setItem:(k,v)=>storage.set(k,v),
       removeItem:k=>storage.delete(k),key:i=>[...storage.keys()][i],get length(){return storage.size;}},
     Map, console:{warn(){}}, clearInterval:id=>calls.push(['clearTimer',id]),
@@ -46,6 +46,9 @@ function fixture() {
     load:(key,fallback)=>JSON.parse(storage.get(key)||JSON.stringify(fallback)),
     loadDecks:()=>state.load(state.storageKey('fc_decks'),[]),
     loadNotes:()=>state.load(state.storageKey('fc_notes'),[]),
+    loadStudyHistory:()=>state.load(state.storageKey('fc_study_history'),{owner:state.user?state.user.id:'guest'}),
+    saveStudyHistory:()=>true,
+    renderStudyAnalytics(){calls.push(['renderAnalytics']);},
     saveDecks:()=>{const key=state.storageKey('fc_decks');writes.push(key);storage.set(key,JSON.stringify(state.decks));},
     saveNotes:()=>{const key=state.storageKey('fc_notes');writes.push(key);storage.set(key,JSON.stringify(state.notesLib));},
     Cloud:{onAuth:fn=>auth=fn,isConfigured:()=>true,
@@ -77,6 +80,20 @@ test('logout scrubs study, editor, quiz, note DOM and memory without deleting li
   assert.equal(f.state.decks[0].id,'guest');
   assert.ok(f.calls.some(c=>c[0]==='cancelSpeech'));
 });
+
+test('account switch loads isolated study analytics history and guest history',()=>{
+  const f=fixture();
+  f.storage.set('fc_study_history::A',JSON.stringify({owner:'A',reviews:12}));
+  f.storage.set('fc_study_history::B',JSON.stringify({owner:'B',reviews:3}));
+  f.storage.set('fc_study_history',JSON.stringify({owner:'guest',reviews:1}));
+  f.auth({id:'B',email:'b@example.test'});
+  assert.deepEqual(f.state.studyHistory,{owner:'B',reviews:3});
+  f.auth(null);
+  assert.deepEqual(f.state.studyHistory,{owner:'guest',reviews:1});
+  assert.equal(f.storage.get('fc_study_history::A'),JSON.stringify({owner:'A',reviews:12}));
+  assert.equal(f.storage.get('fc_study_history::B'),JSON.stringify({owner:'B',reviews:3}));
+});
+
 test('account switch loads correct saved library and preserves both accounts',async()=>{
   const f=fixture();
   f.storage.set('fc_decks::A','[{"id":"A-deck"}]');
