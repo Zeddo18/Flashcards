@@ -57,6 +57,9 @@ function fixture() {
       bulkUpsert:async rows=>{calls.push(['pushDecks',rows]);return rows;},
       bulkUpsertNotes:async rows=>{calls.push(['pushNotes',rows]);return rows;}}
   };
+  state.studyHistorySync = {
+    sync: async () => ({ deviceHistory: state.studyHistory, history: state.studyHistory, synced: true })
+  };
   vm.createContext(state);
   vm.runInContext(section('let accountGeneration =','\n(function migrateIds()'), state);
   vm.runInContext(section('async function pullAndMerge()', '$("syncNow").onclick = pullAndMerge;'), state);

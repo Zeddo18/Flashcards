@@ -96,27 +96,58 @@ test('export includes pending upserts, conflicts, archives, tombstones and holds
  f.journal.enqueue(f.account(),'notes','delete','deleted-note');await f.sync();
  f.state.local.decks[0].password='secret-marker';
  const backup=f.journal.backup(f.account(),f.state.local);
- assert.equal(backup.version,3);assert.equal(backup.ownerId,'A');
+ assert.equal(backup.version,4);assert.equal(backup.ownerId,'A');
  for(const kind of ['op','conflict','deleted','hold'])assert.ok(backup.journal.some(x=>x.key.startsWith(kind+'::')),kind);
  assert.doesNotMatch(JSON.stringify(backup),/secret-marker|password|SUPABASE|access_token/);
 });
-test('version 3 backups include validated study history while excluding unrelated fields',()=>{
+test('version 4 backups include validated study history while excluding unrelated fields',()=>{
  const f=setup();let history=Analytics.createHistory();
  history=Analytics.recordReview(history,{deckId:'d',deckName:'Study',rating:2,timestamp:new Date(2026,10,25,12).getTime()});
  history.extraSecret='must-not-export';
  const backup=f.journal.backup(f.account(),f.state.local,history);
- assert.equal(backup.version,3);assert.equal(backup.studyHistory.totals.reviews,1);
+ assert.equal(backup.version,4);assert.equal(backup.studyHistory.totals.reviews,1);
  assert.equal(backup.studyHistory.extraSecret,undefined);
  assert.deepEqual(backup.studyHistory,Analytics.validateHistory(backup.studyHistory));
  const recovered=recoverBackup(backup,f.account(),()=> 'fresh');
  assert.equal(recovered.studyHistory.totals.reviews,1);
+});
+test('version 4 backups preserve per-device source histories for safe cross-device recovery',()=>{
+ const f=setup(),historyA=Analytics.recordReview(Analytics.createHistory(),{deckId:'d',deckName:'Study',rating:2,timestamp:new Date(2026,10,25,12).getTime()});
+ const historyB=Analytics.recordReview(Analytics.createHistory(),{deckId:'d',deckName:'Study',rating:2,timestamp:new Date(2026,10,26,12).getTime()});
+ const sources=[
+  {sourceId:'11111111-1111-4111-8111-111111111111',history:historyA},
+  {sourceId:'22222222-2222-4222-8222-222222222222',history:historyB}
+ ];
+ const aggregate=Analytics.createHistory();
+ aggregate.totals={reviews:2,ratings:[0,0,2,0],sessions:0,sessionCards:0,completedCards:0,activeDays:2};
+ aggregate.decks=[{...historyA.decks[0],reviews:2,ratings:[0,0,2,0]}];
+ aggregate.days=[...historyA.days,...historyB.days];
+ const backup=f.journal.backup(f.account(),f.state.local,Analytics.validateHistory(aggregate),sources);
+ const recovered=recoverBackup(backup,f.account(),()=> 'fresh');
+ assert.equal(backup.version,4);
+ assert.equal(recovered.studyHistorySources.length,2);
+ assert.equal(recovered.studyHistorySources[1].history.totals.reviews,1);
+});
+test('version 3 backups remain recoverable after the version 4 source-vector upgrade',()=>{
+ const legacy={format:'flushcard',version:3,ownerId:'A',decks:[],notes:[],
+  studyHistory:Analytics.createHistory(),journal:[]};
+ const recovered=recoverBackup(legacy,{userId:'A'},()=> 'fresh');
+ assert.equal(recovered.studyHistory.version,1);
+ assert.equal(recovered.studyHistorySources,null);
+});
+test('version 4 backups reject duplicate or malformed source histories',()=>{
+ const f=setup(),backup=f.journal.backup(f.account(),f.state.local,Analytics.createHistory(),[
+  {sourceId:'11111111-1111-4111-8111-111111111111',history:Analytics.createHistory()}
+ ]);
+ backup.studyHistorySources.push(copy(backup.studyHistorySources[0]));
+ assert.throws(()=>recoverBackup(backup,f.account(),()=> 'fresh'),/study-history source/i);
 });
 test('version 2 backups remain recoverable without fabricating study history',()=>{
  const legacy={format:'flushcard',version:2,ownerId:'A',decks:[],notes:[],journal:[]};
  const recovered=recoverBackup(legacy,{userId:'A'},()=> 'fresh');
  assert.equal(recovered.studyHistory,null);
 });
-test('version 3 backups reject malformed study history before recovering records',()=>{
+test('version 4 backups reject malformed study history before recovering records',()=>{
  const f=setup(),backup=f.journal.backup(f.account(),f.state.local,Analytics.createHistory());
  backup.studyHistory.totals.reviews=-1;
  assert.throws(()=>recoverBackup(backup,f.account(),()=> 'fresh'),/invalid lifetime total/i);

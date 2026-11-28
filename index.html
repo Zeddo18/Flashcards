@@ -1605,6 +1605,7 @@ button,select,input,textarea,label{touch-action:manipulation}
 <script src="/lib/quiz-utils.js"></script>
 <script src="/lib/srs.js"></script>
 <script src="/lib/study-analytics.js"></script>
+<script src="/lib/study-history-sync.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const statusEl = $("status"), drop = $("drop"), fileInput = $("file");
@@ -1679,13 +1680,26 @@ function clearPrivateState() {
 
 /* ========== SRS ========== */
 const { nextSrs, previewInterval, isLearned, dueCount } = window.FCSRS;
+const studyHistorySync = window.FCStudyHistorySync.create({
+  storage: localStorage,
+  cloud: Cloud,
+  analytics: window.FCStudyAnalytics,
+  isCurrent: accountIsCurrent,
+  lock: window.navigator && window.navigator.locks
+    ? (name, work) => window.navigator.locks.request(name, work) : null,
+  uuid: Cloud.uuid
+});
+let deviceStudyHistory = window.FCStudyAnalytics.createHistory();
 let studyHistory = loadStudyHistory();
 
 function loadStudyHistory() {
-  return window.FCStudyAnalytics.normalizeHistory(load(storageKey("fc_study_history"), null));
+  const state = studyHistorySync.activate(captureAccount());
+  deviceStudyHistory = state.deviceHistory;
+  return state.history;
 }
 function saveStudyHistory() {
-  return store(storageKey("fc_study_history"), studyHistory);
+  // Authenticated histories are persisted as per-source snapshots by the sync module.
+  return user ? true : store(storageKey("fc_study_history"), studyHistory);
 }
 function renderStudyAnalytics() {
   const box = $("studyAnalytics");
@@ -1712,7 +1726,7 @@ function renderStudyAnalytics() {
   box.innerHTML =
     '<div class="analytics-head"><div><h3 id="analyticsTitle">Study analytics</h3>' +
     '<p>Review activity, learning streaks and deck progress.</p></div>' +
-    '<span class="analytics-local">Saved on this device</span></div>' +
+    '<span class="analytics-local">' + (user ? "Cloud sync when configured" : "Saved on this device") + '</span></div>' +
     '<div class="analytics-metrics">' +
     '<div class="analytics-stat"><strong>' + summary.reviews + '</strong><span>Total reviews</span></div>' +
     '<div class="analytics-stat"><strong>' + recall + '</strong><span>Recall success</span></div>' +
@@ -2130,10 +2144,16 @@ async function pullAndMerge() {
         }
       });
     if (!result || !accountIsCurrent(account)) return;
+    const historyResult = await syncStudyHistory(account);
+    if (!accountIsCurrent(account)) return;
     if (result.failed) setCloudSyncStatus("Cloud synchronization failed. Changes remain queued locally; use Sync now to retry.");
     else if (result.conflicts) setCloudSyncStatus("Saved locally; " + result.conflicts + " conflict(s) preserved. Open Review conflicts to compare copies. Cloud copies were not overwritten.");
     else if (result.pending) setCloudSyncStatus("Saved locally; " + result.pending + " change(s) awaiting upload.");
-    else setCloudSyncStatus("Successfully synchronized.");
+    else if (historyResult && historyResult.failed) {
+      // Decks and notes remain synced; study history is durable locally and will retry later.
+    } else if (historyResult && historyResult.pending) {
+      setCloudSyncStatus("Decks and notes synchronized. Study history is saved locally; safe cloud sync is waiting for browser lock support.");
+    } else setCloudSyncStatus("Successfully synchronized.");
   } catch (e) {
     if (accountIsCurrent(account)) setCloudSyncStatus("Cloud synchronization failed: " + e.message);
   }
@@ -2142,6 +2162,23 @@ function setCloudSyncStatus(message) {
   statusEl.textContent = message;
   $("acctSyncState").textContent = message;
 }
+async function syncStudyHistory(account = captureAccount()) {
+  if (!account.userId || !cloudReady) return { synced: false, skipped: true };
+  try {
+    const result = await studyHistorySync.sync(account);
+    if (!accountIsCurrent(account)) return null;
+    deviceStudyHistory = result.deviceHistory;
+    studyHistory = result.history;
+    renderStudyAnalytics();
+    return result;
+  } catch (e) {
+    if (accountIsCurrent(account)) {
+      setCloudSyncStatus("Study history is saved locally; cloud sync will retry when online. " + e.message);
+    }
+    return { failed: true, error: e };
+  }
+}
+
 function getSyncJournal() {
   if (!getSyncJournal.instance) getSyncJournal.instance = window.FCSyncJournal.create({
     storage: localStorage, cloud: Cloud, isCurrent: accountIsCurrent,
@@ -2163,6 +2200,7 @@ Cloud.onAuth(u => {
   notesLib = loadNotes();
   todayTodos = load(storageKey("fc_todos"), []);
   studyHistory = loadStudyHistory();
+  renderStudyAnalytics();
   $("nDecks").textContent = decks.length;
   $("nNotes").textContent = notesLib.length;
   renderAuth();
@@ -2180,6 +2218,9 @@ Cloud.onAuth(u => {
   }
 });
 $("syncNow").onclick = pullAndMerge;
+window.addEventListener("online", () => {
+  if (user && cloudReady) pullAndMerge();
+});
 async function queueCloudChange(entity, type, value) {
   if (!user || !cloudReady) return;
   const account = captureAccount();
@@ -2845,26 +2886,49 @@ $("card").onclick = e => { if (e.target.classList.contains("spk")) return; flipp
 function go(step) { if (!cards.length) return; idx = (idx + step + cards.length) % cards.length; showCard(); }
 $("prev").onclick = () => go(-1);
 $("next").onclick = () => go(1);
-function rate(rating) {
+async function recordStudyHistoryEvent(account, kind, event) {
+  try {
+    const result = kind === "review"
+      ? await studyHistorySync.recordReview(account, event)
+      : await studyHistorySync.recordSession(account, event);
+    if (!accountIsCurrent(account)) return false;
+    deviceStudyHistory = result.deviceHistory;
+    studyHistory = result.history;
+    renderStudyAnalytics();
+    if (account.userId && cloudReady) syncStudyHistory(account);
+    return true;
+  } catch (e) {
+    if (accountIsCurrent(account)) {
+      // Keep the in-memory session usable, but never claim that a failed save is durable.
+      studyHistory = kind === "review"
+        ? window.FCStudyAnalytics.recordReview(studyHistory, event)
+        : window.FCStudyAnalytics.recordSession(studyHistory, event);
+      renderStudyAnalytics();
+      statusEl.textContent = "Study activity counted in this session, but local history could not be saved: " + e.message;
+    }
+    return accountIsCurrent(account);
+  }
+}
+async function rate(rating) {
   if (!flipped) {
     statusEl.textContent = "Show the answer before rating this card.";
     return;
   }
   const c = cards[idx];
   if (!c || !session) return;
+  const account = captureAccount();
   if (!cur.virtual) {
     c.srs = nextSrs(c.srs, rating);
     saveDecks(); pushDeck(cur);
   }
   window.FCSRS.recordRating(session, rating);
-  studyHistory = window.FCStudyAnalytics.recordReview(studyHistory, {
+  const saved = await recordStudyHistoryEvent(account, "review", {
     deckId: cur.virtual ? "mix" : cur.id,
     deckName: cur.virtual ? "All decks (mixed)" : cur.name,
     rating,
     timestamp: Date.now()
   });
-  if (!saveStudyHistory()) statusEl.textContent = "Review counted for this session, but study history could not be saved on this device.";
-  renderStudyAnalytics();
+  if (!saved || !accountIsCurrent(account)) return;
   const advance = window.FCSRS.removeRatedCard(cards, idx, rating);
   idx = advance.index;
   if (!advance.remaining) return endSession();
@@ -2874,17 +2938,17 @@ $("rateAgain").onclick = () => rate(0);
 $("rateHard").onclick  = () => rate(1);
 $("rateGood").onclick  = () => rate(2);
 $("rateEasy").onclick  = () => rate(3);
-function endSession() {
+async function endSession() {
   const s = session || window.FCSRS.createSession(0);
-  studyHistory = window.FCStudyAnalytics.recordSession(studyHistory, {
+  const account = captureAccount();
+  const saved = await recordStudyHistoryEvent(account, "session", {
     deckId: cur && cur.virtual ? "mix" : cur.id,
     deckName: cur && cur.virtual ? "All decks (mixed)" : cur.name,
     total: s.total,
     completed: s.completed,
     timestamp: Date.now()
   });
-  if (!saveStudyHistory()) statusEl.textContent = "Session completed, but study history could not be saved on this device.";
-  renderStudyAnalytics();
+  if (!saved || !accountIsCurrent(account)) return;
   const mins = Math.max(1, Math.round((Date.now() - s.started) / 60000));
   $("navRow").classList.add("hide"); $("rateBar").classList.add("hide"); $("card").classList.add("hide");
   const sum = $("summary"); sum.classList.remove("hide");
@@ -3117,7 +3181,9 @@ $("printPdf").onclick = () => {
 };
 $("exportAll").onclick = () => {
   try {
-    const backup = getSyncJournal().backup(captureAccount(), {decks,notes:notesLib}, studyHistory);
+    const account = captureAccount();
+    const backup = getSyncJournal().backup(account, {decks,notes:notesLib}, studyHistory,
+      studyHistorySync.exportSources(account));
     download("flushcard-backup-" + new Date().toISOString().slice(0,10) + ".json", JSON.stringify(backup,null,2), "application/json");
   } catch(e) { statusEl.textContent = "Export failed: " + e.message; }
 };
@@ -3132,8 +3198,6 @@ $("importAll").onclick = () => {
       const text=await file.text();
       if(!accountIsCurrent(account))throw Error("Account changed. Import again.");
       const restored=window.FCSyncJournal.recoverBackup(JSON.parse(text),account,Cloud.uuid);
-      const mergedStudyHistory=restored.studyHistory
-        ? window.FCStudyAnalytics.mergeHistory(studyHistory,restored.studyHistory) : null;
       const existing=new Set([...decks,...notesLib].map(x=>x.id));
       if([...restored.decks,...restored.notes].some(x=>existing.has(x.id)))throw Error("Recovery ID collision. Import again.");
       // Holds are durable before adding records, and never replay old deletes or operation IDs.
@@ -3141,13 +3205,11 @@ $("importAll").onclick = () => {
         getSyncJournal().holdRecovery(account,entity,value);
       decks=[...restored.decks,...decks];notesLib=[...restored.notes,...notesLib];
       if(saveDecks()===false || saveNotes()===false)throw Error("Local storage failed. Keep the backup file; recovery may be incomplete.");
-      if(mergedStudyHistory) {
-        const previousStudyHistory=studyHistory;
-        studyHistory=mergedStudyHistory;
-        if(!saveStudyHistory()) {
-          studyHistory=previousStudyHistory;
-          throw Error("Study history could not be saved. Keep the backup file; recovered decks or notes may already be saved.");
-        }
+      const importedStudyState = restored.studyHistory
+        ? studyHistorySync.importBackup(account, restored.studyHistory, restored.studyHistorySources) : null;
+      if(importedStudyState) {
+        deviceStudyHistory = importedStudyState.deviceHistory;
+        studyHistory = importedStudyState.history;
         renderStudyAnalytics();
       }
       renderDecks();renderNotesLib();
