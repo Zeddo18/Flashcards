@@ -1564,6 +1564,7 @@ button,select,input,textarea,label{touch-action:manipulation}
 <script src="/lib/sync-journal.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="/lib/quiz-utils.js"></script>
+<script src="/lib/srs.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const statusEl = $("status"), drop = $("drop"), fileInput = $("file");
@@ -1637,27 +1638,7 @@ function clearPrivateState() {
 })();
 
 /* ========== SRS ========== */
-const DAY = 86400000;
-function nextSrs(srs, rating) {
-  let { interval = 0, ease = 2.5, reps = 0, lapses = 0 } = srs || {};
-  if (rating === 0) { lapses++; ease = Math.max(1.3, ease - 0.25); interval = 0; }
-  else if (rating === 1) { interval = interval < 1 ? 0.5 : interval * 1.2; ease = Math.max(1.3, ease - 0.15); }
-  else if (rating === 2) { interval = reps === 0 ? 1 : interval < 1 ? 2 : interval * ease; }
-  else { interval = reps === 0 ? 3 : interval * ease * 1.3; ease = Math.min(3.0, ease + 0.15); }
-  reps++;
-  const dueMs = Date.now() + (interval < 1 ? 10 * 60000 : Math.round(interval * DAY));
-  return { interval, ease, reps, lapses, due: dueMs, last: Date.now() };
-}
-function previewInterval(srs, rating) {
-  const n = nextSrs(srs, rating);
-  if (n.interval < 1) return "10m";
-  if (n.interval < 30) return Math.round(n.interval) + "d";
-  if (n.interval < 365) return Math.round(n.interval / 30) + "mo";
-  return (n.interval / 365).toFixed(1) + "y";
-}
-const isDue = c => !c.srs || !c.srs.due || c.srs.due <= Date.now();
-const isLearned = c => c.srs && c.srs.interval >= 21;
-function dueCount(deck) { return deck.cards.filter(isDue).length; }
+const { nextSrs, previewInterval, isLearned, dueCount } = window.FCSRS;
 
 /* ========== accent picker ========== */
 const ACCENT_PRESETS = ["#FFDE00","#FF6B9D","#00D9A3","#7C6FFF","#FF9F1C","#4ECDC4","#FF4757","#6BCF7F"];
@@ -2717,15 +2698,18 @@ function styleCard() {
   b.style.filter = "brightness(.95)";
 }
 function startSession(deck, filter) {
+  const pool = window.FCSRS.selectSessionCards(deck, filter);
+  if (!pool.length) {
+    statusEl.textContent = filter === "due"
+      ? "No cards are due right now."
+      : filter === "missed"
+        ? "No cards have been marked Again yet."
+        : "This deck has no cards.";
+    return false;
+  }
   cur = deck;
-  let pool;
-  if (filter === "due") pool = deck.cards.filter(isDue);
-  else if (filter === "missed") pool = deck.cards.filter(c => c.srs && c.srs.lapses > 0);
-  else pool = deck.cards;
-  if (!pool.length) pool = deck.cards;
-  if (!pool.length) { statusEl.textContent = "This deck has no cards."; return; }
   cards = pool.slice(); idx = 0; flipped = false;
-  session = { total: cards.length, done: 0, started: Date.now(), counts: [0,0,0,0] };
+  session = window.FCSRS.createSession(cards.length);
   $("card").classList.remove("flip");
   $("deckTitle").textContent = cur.name;
   $("cardColor").value = cur.color || "#FFDE00";
@@ -2735,6 +2719,7 @@ function startSession(deck, filter) {
   $("navRow").classList.remove("hide");
   $("rateBar").classList.remove("hide");
   styleCard(); showCard(); show("study");
+  return true;
 }
 function openDeck(id) { const d = decks.find(x => x.id === id); if (!d) return; startSession(d, dueCount(d) ? "due" : "all"); }
 function showCard() {
@@ -2771,14 +2756,19 @@ function go(step) { if (!cards.length) return; idx = (idx + step + cards.length)
 $("prev").onclick = () => go(-1);
 $("next").onclick = () => go(1);
 function rate(rating) {
+  if (!flipped) {
+    statusEl.textContent = "Show the answer before rating this card.";
+    return;
+  }
   const c = cards[idx];
+  if (!c || !session) return;
   if (!cur.virtual) {
     c.srs = nextSrs(c.srs, rating);
-    session.counts[rating]++; session.done++;
     saveDecks(); pushDeck(cur);
   }
+  window.FCSRS.recordRating(session, rating);
   cards.splice(idx, 1);
-  if (rating === 0 && !cur.virtual) cards.push(c);
+  if (rating === 0) cards.push(c);
   if (!cards.length) return endSession();
   if (idx >= cards.length) idx = 0;
   showCard();
@@ -2788,14 +2778,15 @@ $("rateHard").onclick  = () => rate(1);
 $("rateGood").onclick  = () => rate(2);
 $("rateEasy").onclick  = () => rate(3);
 function endSession() {
-  const s = session || { total: 0, done: 0, started: Date.now(), counts: [0,0,0,0] };
+  const s = session || window.FCSRS.createSession(0);
   const mins = Math.max(1, Math.round((Date.now() - s.started) / 60000));
   $("navRow").classList.add("hide"); $("rateBar").classList.add("hide"); $("card").classList.add("hide");
   const sum = $("summary"); sum.classList.remove("hide");
   sum.innerHTML = '<p class="lbl">Session complete</p>' +
-    '<div class="big">' + s.counts[2] + '+' + s.counts[3] + '</div>' +
-    '<p class="lbl">' + s.done + ' reviews · ' + mins + ' min · ' +
-    s.counts[0] + ' again · ' + s.counts[1] + ' hard · ' + s.counts[2] + ' good · ' + s.counts[3] + ' easy</p>' +
+    '<div class="big">' + s.completed + ' / ' + s.total + '</div>' +
+    '<p class="lbl">cards completed · ' + s.done + ' reviews · ' + mins + ' min</p>' +
+    '<p class="lbl">' + s.counts[0] + ' again · ' + s.counts[1] + ' hard · ' +
+    s.counts[2] + ' good · ' + s.counts[3] + ' easy</p>' +
     '<div class="row center" style="margin-top:24px">' +
     '<button class="p" onclick="document.getElementById(\'backDecks\').click()">Back to decks</button>' +
     '<button onclick="document.getElementById(\'filterAll\').click()">Study all again</button>' +
