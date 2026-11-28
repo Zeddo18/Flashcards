@@ -179,6 +179,53 @@ test('recording returns a new history object and leaves the saved input unchange
   assert.notEqual(original, next);
 });
 
+
+test('validates versioned study history backups and rejects malformed counters', () => {
+  let history = Analytics.createHistory();
+  history = Analytics.recordReview(history, event('d', 2, localTime(2026, 11, 25)));
+  assert.deepEqual(Analytics.validateHistory(history), history);
+  assert.throws(() => Analytics.validateHistory({ ...history, totals: { ...history.totals, reviews: -1 } }), /invalid lifetime total/i);
+  assert.throws(() => Analytics.validateHistory({ ...history, days: [{ ...history.days[0], ratings: [0, 0, 0, 0] }] }), /inconsistent rating/i);
+  assert.throws(() => Analytics.validateHistory({ ...history, version: 2 }), /unsupported or invalid/i);
+});
+
+test('merges backup history idempotently without double-counting the same snapshot', () => {
+  let history = Analytics.createHistory();
+  history = Analytics.recordReview(history, event('d', 0, localTime(2026, 11, 25), 'Deck'));
+  history = Analytics.recordReview(history, event('d', 2, localTime(2026, 11, 25, 13), 'Deck'));
+  history = Analytics.recordSession(history, { deckId: 'd', deckName: 'Deck', total: 3, completed: 2, timestamp: localTime(2026, 11, 25) });
+  const once = Analytics.mergeHistory(Analytics.createHistory(), history);
+  const twice = Analytics.mergeHistory(once, history);
+  assert.deepEqual(twice, once);
+  assert.equal(twice.totals.reviews, 2);
+  assert.equal(twice.totals.sessions, 1);
+  assert.equal(twice.days[0].reviews, 2);
+});
+
+test('merges non-overlapping dates and retains newer local progress', () => {
+  let older = Analytics.createHistory();
+  older = Analytics.recordReview(older, event('d1', 2, localTime(2026, 11, 24), 'Older deck'));
+  let newer = Analytics.createHistory();
+  newer = Analytics.recordReview(newer, event('d2', 3, localTime(2026, 11, 25), 'Newer deck'));
+  const merged = Analytics.mergeHistory(newer, older);
+  assert.equal(merged.totals.reviews, 2);
+  assert.equal(merged.days.length, 2);
+  assert.deepEqual(merged.decks.map(deck => deck.deckId).sort(), ['d1', 'd2']);
+  assert.equal(Analytics.getSummary(merged, localTime(2026, 11, 25)).reviews, 2);
+});
+
+test('merges overlapping daily ratings conservatively by per-rating maximum', () => {
+  let left = Analytics.createHistory();
+  left = Analytics.recordReview(left, event('d', 0, localTime(2026, 11, 25)));
+  let right = Analytics.createHistory();
+  right = Analytics.recordReview(right, event('d', 2, localTime(2026, 11, 25)));
+  const merged = Analytics.mergeHistory(left, right);
+  assert.equal(merged.totals.reviews, 2);
+  assert.deepEqual(merged.totals.ratings, [1, 0, 1, 0]);
+  assert.equal(Analytics.mergeHistory(merged, right).totals.reviews, 2);
+});
+
+
 test('frontend reloads account-scoped analytics and precaches the helper offline', () => {
   const root = path.resolve(__dirname, '..');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
