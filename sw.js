@@ -4,7 +4,7 @@
    - Never caches API calls or Supabase auth
    - Caches Google Fonts + CDN scripts for offline use */
 
-const CACHE  = "flushcard-v9";
+const CACHE  = "flushcard-v10";
 const EXT    = "flushcard-ext-v9";
 
 const SHELL = [
@@ -13,6 +13,7 @@ const SHELL = [
   "/manifest.json",
   "/cloud.js",
   "/lib/sync-journal.js",
+  "/lib/quiz-utils.js",
   "/supabase-config.js",
   "/icons/icon-192.png",
   "/icons/icon-512.png",

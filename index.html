@@ -1563,6 +1563,7 @@ button,select,input,textarea,label{touch-action:manipulation}
 <script src="/cloud.js"></script>
 <script src="/lib/sync-journal.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="/lib/quiz-utils.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const statusEl = $("status"), drop = $("drop"), fileInput = $("file");
@@ -3524,29 +3525,16 @@ function renderQuizQuestion() {
     submit.onclick = () => {
       const val = ta.value.trim();
       if (!val) return;
-      const got = splitItems(val);
-      const exp = q.items || splitItems(q.correct);
-      const used = new Set();
-      let matched = 0;
-      exp.forEach(e => {
-        const en = normalizeAnswer(e);
-        const hit = got.findIndex((g, i) => {
-          if (used.has(i)) return false;
-          const gn = normalizeAnswer(g);
-          return gn === en || gn.includes(en) || en.includes(gn);
-        });
-        if (hit !== -1) { used.add(hit); matched++; }
-      });
-      const correct = exp.length > 0 && matched === exp.length;
-      const pills = exp.map(e => {
-        const en = normalizeAnswer(e);
-        const ok = got.some((g, i) => used.has(i) && (normalizeAnswer(g) === en || normalizeAnswer(g).includes(en) || en.includes(normalizeAnswer(g))));
-        return '<span class="quiz-enum-pill ' + (ok ? "ok" : "miss") + '">' + escHtml(e) + '</span>';
-      }).join("");
+      const grade = window.FCQuizUtils.gradeEnumeration(q.items || splitItems(q.correct), val);
+      const pills = grade.results.map(result =>
+        '<span class="quiz-enum-pill ' + (result.matched ? "ok" : "miss") + '">' + escHtml(result.item) + '</span>'
+      ).join("");
       const fb = document.createElement("div");
       fb.className = "quiz-enum-result";
       fb.innerHTML = pills;
-      submitAnswer(val, correct, "You got " + matched + " of " + exp.length + " items", fb);
+      const note = "You got " + grade.matched + " of " + grade.total + " required items" +
+        (grade.extra.length ? "; remove extra or duplicate entries." : ".");
+      submitAnswer(val, grade.correct, note, fb);
     };
     answerBox.append(hint, ta, submit);
     setTimeout(() => ta.focus(), 100);
