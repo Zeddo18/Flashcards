@@ -1,16 +1,16 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
-const api=require('../lib/sync-journal'),html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+const api=require('../lib/sync-journal'),analytics=require('../lib/study-analytics'),html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const block=html.slice(html.indexOf('$("exportAll").onclick'),html.indexOf('/* ========== base64 share'));
 function setup(){
  const els=new Map(),storage=new Map(),inputs=[],calls=[];let n=0;
  function el(){const classes=new Set();return {children:[],textContent:'',value:'',style:{},classList:{add:k=>classes.add(k),remove:k=>classes.delete(k),toggle(k,on){if(on)classes.add(k);else classes.delete(k);},contains:k=>classes.has(k)},append(...a){this.children.push(...a);},appendChild(a){this.children.push(a);},click(){},removeAttribute(){}};}
  const $=id=>{if(!els.has(id))els.set(id,el());return els.get(id);};
- const state={decks:[],notesLib:[],user:{id:'A'},cur:null,cards:[],session:null,$,statusEl:el(),JSON,Date,Set,
+ const state={decks:[],notesLib:[],studyHistory:analytics.createHistory(),user:{id:'A'},cur:null,cards:[],session:null,$,statusEl:el(),JSON,Date,Set,
    captureAccount:()=>({userId:state.user?.id||null,generation:1}),accountIsCurrent:a=>a.userId===(state.user?.id||null),
-   Cloud:{uuid:()=> 'new-'+(++n)},window:{FCSyncJournal:api},
+   Cloud:{uuid:()=> 'new-'+(++n)},window:{FCSyncJournal:api,FCStudyAnalytics:analytics},
    document:{createElement(tag){const e=el();if(tag==='input')inputs.push(e);return e;}},
-   renderDecks(){},renderNotesLib(){},saveDecks:()=>true,saveNotes:()=>true,pullAndMerge:async()=>calls.push('sync'),
+   renderDecks(){},renderNotesLib(){},renderStudyAnalytics(){},saveStudyHistory:()=>true,saveDecks:()=>true,saveNotes:()=>true,pullAndMerge:async()=>calls.push('sync'),
    download:(name,content)=>calls.push(JSON.parse(content))};
  const mem={getItem:k=>storage.has(k)?storage.get(k):null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k),key:i=>[...storage.keys()][i],get length(){return storage.size;}};
  const journal=api.create({storage:mem,cloud:{},isCurrent:state.accountIsCurrent,lock:(_n,work)=>work()});
@@ -33,7 +33,33 @@ test('import discards file read after account switching and never changes the ne
 });
 test('UI export produces versioned account backup including pending values',()=>{
  const f=setup();f.journal.enqueue(f.state.captureAccount(),'decks','upsert',record);f.$('exportAll').onclick();
- assert.equal(f.calls[0].version,2);assert.equal(f.calls[0].journal[0].value.type,'upsert');
+ assert.equal(f.calls[0].version,3);assert.equal(f.calls[0].studyHistory.version,1);assert.equal(f.calls[0].journal[0].value.type,'upsert');
+});
+test('import merges study history without replacing newer local progress',async()=>{
+ const f=setup();
+ f.state.studyHistory=analytics.recordReview(f.state.studyHistory,{
+   deckId:'local',deckName:'Local',rating:2,timestamp:new Date(2026,10,26,12).getTime()
+ });
+ let incoming=analytics.createHistory();
+ incoming=analytics.recordReview(incoming,{
+   deckId:'backup',deckName:'Backup',rating:3,timestamp:new Date(2026,10,25,12).getTime()
+ });
+ const backup=f.journal.backup(f.state.captureAccount(),{decks:[],notes:[]},incoming);
+ f.$('importAll').onclick();const input=f.inputs[0];
+ input.files=[{size:100,text:async()=>JSON.stringify(backup)}];await input.onchange();
+ assert.equal(f.state.studyHistory.totals.reviews,2);
+ assert.deepEqual(f.state.studyHistory.decks.map(x=>x.deckId).sort(),['backup','local']);
+ assert.match(f.state.statusEl.textContent,/Study history merged safely/);
+});
+test('legacy backup import leaves current study history untouched',async()=>{
+ const f=setup();
+ f.state.studyHistory=analytics.recordReview(f.state.studyHistory,{
+   deckId:'local',deckName:'Local',rating:2,timestamp:new Date(2026,10,26,12).getTime()
+ });
+ f.$('importAll').onclick();const input=f.inputs[0];
+ input.files=[{size:100,text:async()=>JSON.stringify({decks:[],notes:[]})}];await input.onchange();
+ assert.equal(f.state.studyHistory.totals.reviews,1);
+ assert.match(f.state.statusEl.textContent,/no study history/);
 });
 test('guest conflict UI does not expose account copies',()=>{
  const f=setup();f.state.user=null;f.$('reviewConflicts').onclick();

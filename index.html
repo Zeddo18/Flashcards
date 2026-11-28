@@ -1275,7 +1275,7 @@ button,select,input,textarea,label{touch-action:manipulation}
     </div>
     <section id="recoveryPanel" class="panel hide" aria-label="Conflict recovery">
       <div class="row"><h2>Review conflicts</h2><button id="closeRecovery">Close</button></div>
-      <p>Compare every preserved copy. Replacing content requires confirmation. Export All includes recovery copies.</p>
+      <p>Compare every preserved copy. Replacing content requires confirmation. Export All includes decks, notes, study history and recovery copies.</p>
       <div id="recoveryList"></div>
     </section>
     <div id="todayBox"></div>
@@ -3117,7 +3117,7 @@ $("printPdf").onclick = () => {
 };
 $("exportAll").onclick = () => {
   try {
-    const backup = getSyncJournal().backup(captureAccount(), {decks,notes:notesLib});
+    const backup = getSyncJournal().backup(captureAccount(), {decks,notes:notesLib}, studyHistory);
     download("flushcard-backup-" + new Date().toISOString().slice(0,10) + ".json", JSON.stringify(backup,null,2), "application/json");
   } catch(e) { statusEl.textContent = "Export failed: " + e.message; }
 };
@@ -3132,6 +3132,8 @@ $("importAll").onclick = () => {
       const text=await file.text();
       if(!accountIsCurrent(account))throw Error("Account changed. Import again.");
       const restored=window.FCSyncJournal.recoverBackup(JSON.parse(text),account,Cloud.uuid);
+      const mergedStudyHistory=restored.studyHistory
+        ? window.FCStudyAnalytics.mergeHistory(studyHistory,restored.studyHistory) : null;
       const existing=new Set([...decks,...notesLib].map(x=>x.id));
       if([...restored.decks,...restored.notes].some(x=>existing.has(x.id)))throw Error("Recovery ID collision. Import again.");
       // Holds are durable before adding records, and never replay old deletes or operation IDs.
@@ -3139,10 +3141,22 @@ $("importAll").onclick = () => {
         getSyncJournal().holdRecovery(account,entity,value);
       decks=[...restored.decks,...decks];notesLib=[...restored.notes,...notesLib];
       if(saveDecks()===false || saveNotes()===false)throw Error("Local storage failed. Keep the backup file; recovery may be incomplete.");
+      if(mergedStudyHistory) {
+        const previousStudyHistory=studyHistory;
+        studyHistory=mergedStudyHistory;
+        if(!saveStudyHistory()) {
+          studyHistory=previousStudyHistory;
+          throw Error("Study history could not be saved. Keep the backup file; recovered decks or notes may already be saved.");
+        }
+        renderStudyAnalytics();
+      }
       renderDecks();renderNotesLib();
       $("nDecks").textContent=decks.length;$("nNotes").textContent=notesLib.length;
       $("uploadRecovery").classList.toggle("hide",!user || !restored.decks.length && !restored.notes.length);
-      statusEl.textContent="Restored "+restored.decks.length+" deck(s), "+restored.notes.length+" note(s), including "+restored.recoveryCopies+" recovery copies. Saved locally; nothing uploaded.";
+      const historyMessage=restored.studyHistory
+        ? " Study history merged safely ("+window.FCStudyAnalytics.getSummary(studyHistory).reviews+" lifetime reviews)."
+        : " This older backup has no study history.";
+      statusEl.textContent="Restored "+restored.decks.length+" deck(s), "+restored.notes.length+" note(s), including "+restored.recoveryCopies+" recovery copies."+historyMessage+" Saved locally; nothing uploaded.";
     }catch(e){statusEl.textContent="Recovery failed: "+e.message;}
   };
   i.click();
