@@ -6,7 +6,17 @@ function setup(){
  const els=new Map(),storage=new Map(),inputs=[],calls=[];let n=0;
  function el(){const classes=new Set();return {children:[],textContent:'',value:'',style:{},classList:{add:k=>classes.add(k),remove:k=>classes.delete(k),toggle(k,on){if(on)classes.add(k);else classes.delete(k);},contains:k=>classes.has(k)},append(...a){this.children.push(...a);},appendChild(a){this.children.push(a);},click(){},removeAttribute(){}};}
  const $=id=>{if(!els.has(id))els.set(id,el());return els.get(id);};
- const state={decks:[],notesLib:[],studyHistory:analytics.createHistory(),user:{id:'A'},cur:null,cards:[],session:null,$,statusEl:el(),JSON,Date,Set,
+ const state={decks:[],notesLib:[],studyHistory:analytics.createHistory(),deviceStudyHistory:analytics.createHistory(),user:{id:'A'},cur:null,cards:[],session:null,$,statusEl:el(),JSON,Date,Set,
+   studyHistorySync:{
+     exportSources:()=>[],
+     importBackup:(account,history,sources)=>{
+       let merged=state.studyHistory;
+       if(Array.isArray(sources)&&sources.length)for(const source of sources)merged=analytics.mergeHistory(merged,source.history);
+       else if(history)merged=analytics.mergeHistory(merged,history);
+       state.studyHistory=merged;state.deviceStudyHistory=merged;
+       return {history:merged,deviceHistory:merged};
+     }
+   },
    captureAccount:()=>({userId:state.user?.id||null,generation:1}),accountIsCurrent:a=>a.userId===(state.user?.id||null),
    Cloud:{uuid:()=> 'new-'+(++n)},window:{FCSyncJournal:api,FCStudyAnalytics:analytics},
    document:{createElement(tag){const e=el();if(tag==='input')inputs.push(e);return e;}},
@@ -33,7 +43,7 @@ test('import discards file read after account switching and never changes the ne
 });
 test('UI export produces versioned account backup including pending values',()=>{
  const f=setup();f.journal.enqueue(f.state.captureAccount(),'decks','upsert',record);f.$('exportAll').onclick();
- assert.equal(f.calls[0].version,3);assert.equal(f.calls[0].studyHistory.version,1);assert.equal(f.calls[0].journal[0].value.type,'upsert');
+ assert.equal(f.calls[0].version,4);assert.equal(f.calls[0].studyHistory.version,1);assert.equal(f.calls[0].journal[0].value.type,'upsert');
 });
 test('import merges study history without replacing newer local progress',async()=>{
  const f=setup();

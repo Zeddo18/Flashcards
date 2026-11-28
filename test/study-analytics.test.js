@@ -190,6 +190,7 @@ test('frontend reloads account-scoped analytics and precaches the helper offline
   assert.match(html, /Cards completed in completed sessions/);
   assert.match(html, /Longest streak \(2-year history\)/);
   assert.match(html, /Detailed daily history is retained for 2 years/);
-  assert.match(sw, /"flushcard-v13"/);
+  assert.match(sw, /"flushcard-v14"/);
   assert.match(sw, /"\/lib\/study-analytics\.js"/);
+  assert.match(sw, /"\/lib\/study-history-sync\.js"/);
 });

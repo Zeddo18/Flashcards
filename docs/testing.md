@@ -39,6 +39,8 @@ Existing regression coverage:
 | Manual conflicts, stale resolutions, backup and recovery | test/recovery.test.js |
 | Recovery UI, account switches, study-history backup/merge and export | test/recovery-ui.test.js |
 | Study history, daily activity, streaks and per-deck analytics | test/study-analytics.test.js |
+| Per-device source vectors, additive aggregation, offline retries and account isolation | test/study-history-sync.test.js |
+| Supabase study-history query ownership and composite-key upsert contract | test/study-history-cloud.test.js |
 | Executable inline script classification and syntax-check behavior | test/syntax-check.test.js |
 
 Tests use synthetic data and mocked cloud/network responses. They do not verify

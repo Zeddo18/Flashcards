@@ -209,6 +209,34 @@
     if (error) throw error;
     return data ? (entity === "decks" ? rowToDeck(data) : rowToNote(data)) : null;
   }
+  /* ---------- per-device study history ---------- */
+  async function listMyStudyHistoryDevices(expectedUserId) {
+    if (!user || user.id !== expectedUserId) throw new Error("Account changed.");
+    const { data, error } = await client.from("study_history_devices")
+      .select("device_id, history, updated_at")
+      .eq("user_id", expectedUserId)
+      .order("updated_at", { ascending: true });
+    if (error) throw error;
+    if (!user || user.id !== expectedUserId) throw new Error("Account changed.");
+    return data || [];
+  }
+  async function upsertMyStudyHistoryDevice(deviceId, history, expectedUserId) {
+    if (!user || user.id !== expectedUserId) throw new Error("Account changed.");
+    const row = {
+      user_id: expectedUserId,
+      device_id: deviceId,
+      history,
+      updated_at: new Date().toISOString()
+    };
+    const { data, error } = await client.from("study_history_devices")
+      .upsert(row, { onConflict: "user_id,device_id" })
+      .select("device_id, history, updated_at")
+      .single();
+    if (error) throw error;
+    if (!user || user.id !== expectedUserId) throw new Error("Account changed.");
+    return data;
+  }
+
   function makeSlug() {
     const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
     let s = "";
@@ -230,6 +258,7 @@
     listMyDecks, upsertDeck, deleteDeck, bulkUpsert,
     publishDeck, unpublishDeck, getPublicDeck,
     listMyNotes, upsertNote, deleteNote, bulkUpsertNotes,
+    listMyStudyHistoryDevices, upsertMyStudyHistoryDevice,
     uuid, resolveVersion
   };
 })();
