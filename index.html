@@ -353,6 +353,39 @@ label{font-weight:600;font-size:.9rem}
 .badge.cloud{background:#FFF3CC}
 .badge.guest{background:#F0F0F0;color:var(--mut)}
 
+/* ============ STUDY ANALYTICS ============ */
+.study-analytics{
+  margin:0 0 20px;padding:20px;
+  border:3px solid var(--bd);border-radius:var(--r2);
+  background:var(--panel);box-shadow:var(--sh);
+}
+.analytics-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.analytics-head h3{font-size:1.1rem;margin:0 0 5px}
+.analytics-head p,.analytics-note{color:var(--mut);font-size:.82rem;font-weight:600;margin:0}
+.analytics-local{font-size:.72rem;font-weight:700;padding:5px 9px;border:2px solid var(--bd);border-radius:999px;background:var(--panel2);white-space:nowrap}
+.analytics-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.analytics-stat{min-width:0;padding:12px;border:2px solid var(--bd);border-radius:var(--r);background:var(--panel2)}
+.analytics-stat strong{display:block;font-size:1.45rem;line-height:1.2;overflow-wrap:anywhere}
+.analytics-stat span{display:block;margin-top:4px;font-size:.76rem;font-weight:700;color:var(--mut)}
+.analytics-substats{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 18px;font-size:.82rem;font-weight:700}
+.analytics-substats span{color:var(--mut)}
+.analytics-substats strong{color:var(--fg)}
+.analytics-section-title{font-size:.9rem;font-weight:800;margin:18px 0 10px}
+.analytics-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;min-height:104px}
+.analytics-day{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;font-size:.72rem;font-weight:700}
+.analytics-bar-wrap{height:74px;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.analytics-bar{width:min(100%,34px);min-height:4px;border:2px solid var(--bd);border-radius:6px 6px 2px 2px;background:var(--acc)}
+.analytics-day strong{font-size:.76rem}
+.analytics-day span{color:var(--mut)}
+.analytics-decks{border-top:2px solid var(--bd)}
+.analytics-deck-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)}
+.analytics-deck-name{min-width:0;overflow-wrap:anywhere;font-weight:800}
+.analytics-deck-meta{display:block;margin-top:3px;color:var(--mut);font-size:.74rem;font-weight:600}
+.analytics-deck-value{text-align:right;font-weight:800;white-space:nowrap}
+.analytics-deck-value small{display:block;color:var(--mut);font-size:.7rem;font-weight:600}
+.analytics-empty{padding:14px 0;color:var(--mut);font-size:.85rem;font-weight:600}
+.study-analytics .analytics-note{margin-top:12px}
+
 /* ============ SEARCH ============ */
 .searchwrap{margin-bottom:16px}
 .searchwrap input{
@@ -1058,6 +1091,11 @@ details.menu>summary:hover{transform:translate(-1px,-1px);box-shadow:var(--sh);b
   .studyhead .title{font-size:1.1rem}
   .panel{padding:16px;border-radius:var(--r)}
   #todayBox{padding:16px}
+  .study-analytics{padding:16px}
+  .analytics-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .analytics-deck-row{gap:8px}
+  .analytics-deck-name{font-size:.88rem}
+  .analytics-deck-meta{font-size:.68rem}
   .acct-av{width:52px;height:52px;font-size:1.3rem}
   .quiz-match-row{grid-template-columns:1fr;gap:8px}
 }
@@ -1241,6 +1279,7 @@ button,select,input,textarea,label{touch-action:manipulation}
       <div id="recoveryList"></div>
     </section>
     <div id="todayBox"></div>
+    <section id="studyAnalytics" class="study-analytics" aria-labelledby="analyticsTitle"></section>
     <div class="searchwrap"><input id="deckSearch" type="text" placeholder="Search decks and cards…" autocomplete="off"></div>
     <div id="deckList" class="decklist"></div>
   </div>
@@ -1565,6 +1604,7 @@ button,select,input,textarea,label{touch-action:manipulation}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="/lib/quiz-utils.js"></script>
 <script src="/lib/srs.js"></script>
+<script src="/lib/study-analytics.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const statusEl = $("status"), drop = $("drop"), fileInput = $("file");
@@ -1639,6 +1679,56 @@ function clearPrivateState() {
 
 /* ========== SRS ========== */
 const { nextSrs, previewInterval, isLearned, dueCount } = window.FCSRS;
+let studyHistory = loadStudyHistory();
+
+function loadStudyHistory() {
+  return window.FCStudyAnalytics.normalizeHistory(load(storageKey("fc_study_history"), null));
+}
+function saveStudyHistory() {
+  return store(storageKey("fc_study_history"), studyHistory);
+}
+function renderStudyAnalytics() {
+  const box = $("studyAnalytics");
+  if (!box) return;
+  const summary = window.FCStudyAnalytics.getSummary(studyHistory);
+  const recall = summary.recallRate === null ? "—" : summary.recallRate + "%";
+  const completion = summary.completionRate === null ? "—" : summary.completionRate + "%";
+  const maxDaily = Math.max(1, ...summary.weekly.map(day => day.reviews));
+  const weekly = summary.weekly.map(day => {
+    const height = day.reviews ? Math.max(6, Math.round(day.reviews / maxDaily * 72)) : 4;
+    return '<div class="analytics-day" aria-label="' + escHtml(day.date) + ': ' + day.reviews + ' reviews">' +
+      '<div class="analytics-bar-wrap"><div class="analytics-bar" style="height:' + height + 'px" title="' + day.reviews + ' reviews"></div></div>' +
+      '<strong>' + day.reviews + '</strong><span>' + day.label + '</span></div>';
+  }).join("");
+  const deckRows = summary.decks.length ? summary.decks.map(deck => {
+    const rate = deck.recallRate === null ? "—" : deck.recallRate + "%";
+    return '<div class="analytics-deck-row">' +
+      '<div class="analytics-deck-name">' + escHtml(deck.deckName) +
+      '<small class="analytics-deck-meta">' + deck.sessions + ' completed sessions · ' +
+      deck.completedCards + '/' + deck.sessionCards + ' cards completed</small></div>' +
+      '<div class="analytics-deck-value">' + deck.reviews + '<small>reviews</small></div>' +
+      '<div class="analytics-deck-value">' + rate + '<small>recall</small></div></div>';
+  }).join("") : '<div class="analytics-empty">No study activity recorded yet. Rate a few flashcards to start your learning history.</div>';
+
+  box.innerHTML =
+    '<div class="analytics-head"><div><h3 id="analyticsTitle">Study analytics</h3>' +
+    '<p>Review activity, learning streaks and deck progress.</p></div>' +
+    '<span class="analytics-local">Saved on this device</span></div>' +
+    '<div class="analytics-metrics">' +
+    '<div class="analytics-stat"><strong>' + summary.reviews + '</strong><span>Total reviews</span></div>' +
+    '<div class="analytics-stat"><strong>' + recall + '</strong><span>Recall success</span></div>' +
+    '<div class="analytics-stat"><strong>' + summary.activeDays + '</strong><span>Study days</span></div>' +
+    '<div class="analytics-stat"><strong>' + summary.currentStreak + '</strong><span>Current streak · days</span></div>' +
+    '</div>' +
+    '<div class="analytics-substats"><span>Completed sessions: <strong>' + summary.sessions + '</strong></span>' +
+    '<span>Cards completed: <strong>' + summary.completedCards + '/' + summary.sessionCards + '</strong></span>' +
+    '<span>Session completion: <strong>' + completion + '</strong></span>' +
+    '<span>Longest streak: <strong>' + summary.longestStreak + ' days</strong></span></div>' +
+    '<div class="analytics-section-title">Last 7 days · reviews</div>' +
+    '<div class="analytics-week" role="group" aria-label="Daily review counts for the last seven days">' + weekly + '</div>' +
+    '<div class="analytics-section-title">Deck history</div><div class="analytics-decks">' + deckRows + '</div>' +
+    '<p class="analytics-note">Recall success counts Hard, Good and Easy ratings. It is based on self-ratings, not quiz accuracy. History starts with this update and is stored locally for each account on this device.</p>';
+}
 
 /* ========== accent picker ========== */
 const ACCENT_PRESETS = ["#FFDE00","#FF6B9D","#00D9A3","#7C6FFF","#FF9F1C","#4ECDC4","#FF4757","#6BCF7F"];
@@ -2074,6 +2164,7 @@ Cloud.onAuth(u => {
   decks = loadDecks();
   notesLib = loadNotes();
   todayTodos = load(storageKey("fc_todos"), []);
+  studyHistory = loadStudyHistory();
   $("nDecks").textContent = decks.length;
   $("nNotes").textContent = notesLib.length;
   renderAuth();
@@ -2582,6 +2673,7 @@ async function generate() {
 function renderDecks() {
   $("nDecks").textContent = decks.length;
   renderToday();
+  renderStudyAnalytics();
   const list = $("deckList");
   list.innerHTML = "";
   if (!decks.length) {
@@ -2767,6 +2859,14 @@ function rate(rating) {
     saveDecks(); pushDeck(cur);
   }
   window.FCSRS.recordRating(session, rating);
+  studyHistory = window.FCStudyAnalytics.recordReview(studyHistory, {
+    deckId: cur.virtual ? "mix" : cur.id,
+    deckName: cur.virtual ? "All decks (mixed)" : cur.name,
+    rating,
+    timestamp: Date.now()
+  });
+  if (!saveStudyHistory()) statusEl.textContent = "Review counted for this session, but study history could not be saved on this device.";
+  renderStudyAnalytics();
   const advance = window.FCSRS.removeRatedCard(cards, idx, rating);
   idx = advance.index;
   if (!advance.remaining) return endSession();
@@ -2778,6 +2878,15 @@ $("rateGood").onclick  = () => rate(2);
 $("rateEasy").onclick  = () => rate(3);
 function endSession() {
   const s = session || window.FCSRS.createSession(0);
+  studyHistory = window.FCStudyAnalytics.recordSession(studyHistory, {
+    deckId: cur && cur.virtual ? "mix" : cur.id,
+    deckName: cur && cur.virtual ? "All decks (mixed)" : cur.name,
+    total: s.total,
+    completed: s.completed,
+    timestamp: Date.now()
+  });
+  if (!saveStudyHistory()) statusEl.textContent = "Session completed, but study history could not be saved on this device.";
+  renderStudyAnalytics();
   const mins = Math.max(1, Math.round((Date.now() - s.started) / 60000));
   $("navRow").classList.add("hide"); $("rateBar").classList.add("hide"); $("card").classList.add("hide");
   const sum = $("summary"); sum.classList.remove("hide");
