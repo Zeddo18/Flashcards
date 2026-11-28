@@ -1,6 +1,6 @@
 # FC-008E — Cross-device study-history synchronization
 
-**Status:** Client synchronization adapter and automated tests are implemented in this branch. The database migration is still review-only and has NOT been applied to the production Supabase project.
+**Status:** Client synchronization implementation merged into \`main\` in PR #19. The linked Vercel production deployment reached READY for commit \`398fe4989ac4c96a42165cf70100117bf02b02b8\`. The Supabase migration remains review-only and has NOT been applied to the existing production project. Live authenticated multi-device sync is therefore not verified.
 
 ## How synchronization works
 
@@ -20,13 +20,15 @@ The existing GitHub Actions PostgreSQL 17 service is disposable and uses synthet
 
 ## Production activation boundary
 
-The migration supabase/migrations/202611280001_fc008e_study_history_devices.sql has not been applied to Supabase. Until that table exists and its Data API is available, the app keeps study history locally and reports a retryable cloud-sync status. Existing deck and note sync is unchanged. No production schema, data, credentials, or settings were modified by this implementation.
+The migration \`supabase/migrations/202611280001_fc008e_study_history_devices.sql\` has not been applied to Supabase. Until that table exists and its Data API is available, the app keeps study history locally and reports a retryable cloud-sync status. Existing deck and note sync is unchanged. No production schema, data, credentials, or settings were modified by this implementation.
 
-## Tests
+## Tests and verification
 
-- test/study-history-sync.test.js: device identity, legacy migration, independent-device aggregation, idempotent vector merge, offline retry, account changes, corrupt payload rejection, and backup import.
-- test/study-history-cloud.test.js: authenticated owner checks, composite-key upsert, deterministic listing, and Data API error handling.
-- test/recovery.test.js and test/recovery-ui.test.js: version 4 source-vector backups and backward compatibility.
-- test/client-privacy.test.js: stale-account sync protection remains covered.
+- \`test/study-history-sync.test.js\`: device identity, legacy migration, independent-device aggregation, idempotent vector merge, offline retry, account changes, corrupt payload rejection, and backup import.
+- \`test/study-history-cloud.test.js\`: authenticated owner checks, composite-key upsert, deterministic listing, and Data API error handling.
+- \`test/recovery.test.js\` and \`test/recovery-ui.test.js\`: version 4 source-vector backups and backward compatibility.
+- \`test/client-privacy.test.js\`: stale-account sync protection remains covered.
+- GitHub Actions at merged commit: Node suite 183/183 passed; disposable PostgreSQL RLS and FC-008E migration job passed.
+- Vercel production deployment for the merge commit: READY. A 30-minute production error/fatal log query returned no matching records; this limited log query is not a substitute for browser or live Supabase verification.
 
-The synthetic SQL workflow proves database RLS behavior, while mocked client tests prove application request construction. Neither claims a live authenticated Supabase round-trip until the production migration is explicitly applied and verified.
+The synthetic SQL workflow proves database RLS behavior, while mocked client tests prove application request construction. Neither claims a live authenticated Supabase round-trip until the production migration is separately approved, applied, and verified.
