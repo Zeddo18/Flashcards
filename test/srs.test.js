@@ -65,6 +65,7 @@ test('ease and interval stay inside supported bounds after repeated lapses', () 
   const extreme = SRS.nextSrs({ interval: Number.MAX_VALUE, ease: 99, reps: 4, lapses: 0 }, 3, NOW);
   assert.ok(extreme.interval <= 36500);
   assert.equal(extreme.ease, 3);
+  assert.equal(extreme.due, NOW + Math.round(extreme.interval * DAY));
   assert.ok(Number.isFinite(extreme.due));
 });
 
